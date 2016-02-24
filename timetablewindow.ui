@@ -35,6 +35,9 @@
       <property name="uniformRowHeights">
        <bool>true</bool>
       </property>
+      <property name="expandsOnDoubleClick">
+       <bool>false</bool>
+      </property>
       <attribute name="headerMinimumSectionSize">
        <number>120</number>
       </attribute>
@@ -46,6 +49,12 @@
    </layout>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
@@ -53,10 +62,14 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionOpen"/>
+   <addaction name="actionTaskListing"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
     <string>&amp;Open</string>
+   </property>
+   <property name="toolTip">
+    <string>Open a different tracker file</string>
    </property>
   </action>
   <action name="actionExit">
@@ -64,9 +77,23 @@
     <string>&amp;Exit</string>
    </property>
   </action>
+  <action name="actionTaskListing">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/details.svg</normaloff>:/icons/details.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Task Listing</string>
+   </property>
+   <property name="toolTip">
+    <string>Show when have you worked on the selected task</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>actionExit</sender>

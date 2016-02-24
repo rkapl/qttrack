@@ -16,6 +16,9 @@ public:
     CalendarModel* model() const;
     CalendarTask* parent() const;
     QList<CalendarTask*> subtasks() const;
+    /**
+     * Time spans will be sorted by their start date
+     */
     QList<CalendarTimeSpan*> timeSpans() const;
     QString summary() const;
     TimeSpan duration(bool recursive) const;

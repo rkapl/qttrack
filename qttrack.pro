@@ -13,19 +13,26 @@ PKGCONFIG += libical
 
 
 SOURCES += main.cpp\
-        timetablewindow.cpp \
     calendartask.cpp \
     calendarmodel.cpp \
     calendartimespan.cpp \
     treecalendarmodel.cpp \
-    timespan.cpp
+    timespan.cpp \
+    timelistdialog.cpp \
+    tasklistwindow.cpp
 
-HEADERS  += timetablewindow.h \
+HEADERS  += \
     calendartask.h \
     calendarmodel.h \
     calendartimespan.h \
     treecalendarmodel.h \
-    timespan.h
+    timespan.h \
+    timelistdialog.h \
+    tasklistwindow.h
 
-FORMS    += timetablewindow.ui
+FORMS    += timetablewindow.ui \
+    timelistdialog.ui
+
+RESOURCES += \
+    resources.qrc
 

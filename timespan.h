@@ -10,10 +10,11 @@ struct TimeSpan
 public:
     TimeSpan();
     TimeSpan(qint64 msec);
-    QString description() const;
-
+    QString description(int maxdetail = 2) const;
     TimeSpan& operator+=(const TimeSpan& add);
     TimeSpan operator+(const TimeSpan& b) const;
+
+    static constexpr int MAX_DETAIL = 4;
 
     qint64 msec;
 };

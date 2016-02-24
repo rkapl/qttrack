@@ -1,4 +1,4 @@
-#include "timetablewindow.h"
+#include "tasklistwindow.h"
 #include <QApplication>
 #include <QCommandLineParser>
 #include <stdio.h>
@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     cmdline.addPositionalArgument("calendar-file", "Calendar file to open (in KTimeTracker format)", "[calendar-file]");
     cmdline.process(a);
 
-    TimeTableWindow w;
+    TaskListWindow w;
     w.show();
 
     if(cmdline.positionalArguments().length() == 1){

@@ -14,11 +14,12 @@ TimeSpan::TimeSpan(qint64 msec):
 
 }
 #define wpart(name, var) \
-    if(var != 0 || noskip){ \
+    if( (var != 0 || noskip) && detail < maxdetail){ \
         noskip = true; \
+        detail++; \
         text.append(QString("%1 " name).arg(var)); \
     }
-QString TimeSpan::description() const{
+QString TimeSpan::description(int maxdetail) const{
     qint64 seconds = msec / 1000;
     qint64 minutes = seconds / 60;
     seconds -= minutes * 60;
@@ -30,6 +31,7 @@ QString TimeSpan::description() const{
     QStringList text;
 
     bool noskip = false;
+    int detail = 0;
     wpart("d", days);
     wpart("h", hours);
     wpart("m", minutes);

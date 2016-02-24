@@ -7,6 +7,7 @@
 #include <memory>
 #include <QDebug>
 #include <QHash>
+#include <QtAlgorithms>
 
 typedef void (*icalparser_deleter)(icalparser*);
 typedef void (*icalcomponent_deleter)(icalcomponent*);
@@ -71,6 +72,13 @@ bool CalendarModel::handleCalendar(icalcomponent *c){
         handleEvent(sub, tasks);
         sub = icalcomponent_get_next_component(c, ICAL_VEVENT_COMPONENT);
     }
+
+    for(CalendarTask* t: mAllTasks){
+        qSort(t->mTimeSpans.begin(), t->mTimeSpans.end(), [](CalendarTimeSpan* a, CalendarTimeSpan* b){
+           return a->start() < b->start();
+        });
+    }
+
     return true;
 }
 void CalendarModel::makeTaskTree(const TaskMap& tasks){
@@ -160,8 +168,8 @@ void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
         }
     }
     CalendarTask* task = span->task();
-    qDebug() << "Event (part of " << task->summary() << ") takes " << span->duration().description()
-             << "(" << span->duration().msec << " ms)";
+    // qDebug() << "Event (part of " << task->summary() << ") takes " << span->duration().description()
+    //          << "(" << span->duration().msec << " ms)";
     task->mTimeSpans.append(span.take());
 
 }

@@ -2,7 +2,7 @@
 #define TIMETABLEWINDOW_H
 
 #include <QMainWindow>
-
+#include <QItemSelection>
 
 namespace Ui {
 class TimeTableWindow;
@@ -10,17 +10,22 @@ class TimeTableWindow;
 
 class TreeCalendarModel;
 class CalendarModel;
+class CalendarTask;
 
-class TimeTableWindow : public QMainWindow
+class TaskListWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit TimeTableWindow(QWidget *parent = 0);
-    ~TimeTableWindow();
+    explicit TaskListWindow(QWidget *parent = 0);
+    ~TaskListWindow();
 public slots:
     void openFileWithDialog();
     void openFile(const QString& fileName);
+private slots:
+    void taskSelectionChanged(const QItemSelection& selected, const QItemSelection& );
+    void timeDetailsForSelection();
+    void timeDetailsFor(const QModelIndex& selection);
 private:
     Ui::TimeTableWindow *ui;
     CalendarModel* mModel;

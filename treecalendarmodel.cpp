@@ -8,6 +8,9 @@ TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
 {
 
 }
+CalendarTask* TreeCalendarModel::taskForIndex(const QModelIndex& idx){
+    return static_cast<CalendarTask*>(idx.internalPointer());
+}
 QModelIndex TreeCalendarModel::index(int row, int column, const QModelIndex &parent) const{
     if(!parent.isValid())
         return createIndex(row, column, mModel->rootTasks()[row]);
