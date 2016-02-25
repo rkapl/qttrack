@@ -17,6 +17,7 @@ public:
     QList<CalendarTask*> rootTasks() const;
     ~CalendarModel();
 private:
+    static constexpr const char* ICAL_XPROP_DURATION = "X-KDE-ktimetracker-duration";
     typedef QHash<QString, CalendarTask*> TaskMap;
 
     QList<CalendarTask*> mRootTasks;

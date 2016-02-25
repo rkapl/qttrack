@@ -28,7 +28,7 @@ TimeListDialog::TimeListDialog(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->treeWidget->setColumnCount(3);
-    ui->treeWidget->setHeaderLabels(QStringList{"Start", "Duration", "End"});
+    ui->treeWidget->setHeaderLabels(QStringList{tr("Start"), tr("Duration"), tr("End")});
     ui->treeWidget->setAlternatingRowColors(true);
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
@@ -49,10 +49,15 @@ void TimeListDialog::setContent(CalendarTask *task){
         QTreeWidgetItem* item = new QTreeWidgetItem(walker.dayItem);
         item->setData(0, Qt::DisplayRole, span->start().time());
         item->setData(1, Qt::DisplayRole, span->duration().description());
-        if(span->start().date() != span->end().date()){
-            item->setData(2, Qt::DisplayRole, span->start());
+        if(span->isFix()){
+            item->setData(2, Qt::DisplayRole, tr("Time Fix"));
         }else{
-            item->setData(2, Qt::DisplayRole, span->start().time());
+            // display only time (not date) if the start date is the same as end date
+            if(span->start().date() != span->end().date()){
+                item->setData(2, Qt::DisplayRole, span->end());
+            }else{
+                item->setData(2, Qt::DisplayRole, span->end().time());
+            }
         }
     }
 

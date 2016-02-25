@@ -12,6 +12,15 @@
 typedef void (*icalparser_deleter)(icalparser*);
 typedef void (*icalcomponent_deleter)(icalcomponent*);
 
+static icalproperty* icalcomponent_get_first_x_property(icalcomponent* c, const char* name){
+    icalproperty* p = icalcomponent_get_first_property(c, ICAL_X_PROPERTY);
+    while(p != NULL){
+        if(strcmp(name, icalproperty_get_x_name(p)) == 0)
+            return p;
+    }
+    return NULL;
+}
+
 CalendarModel::CalendarModel(QObject *parent): QObject(parent)
 {
 
@@ -149,6 +158,18 @@ void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
 
     span->mStart = icalToQt(icalproperty_get_created(icalcomponent_get_first_property(c, ICAL_DTSTART_PROPERTY)));
     span->mEnd = icalToQt(icalproperty_get_created(icalcomponent_get_first_property(c, ICAL_DTEND_PROPERTY)));
+
+    icalproperty* durationProperty = icalcomponent_get_first_x_property(c, ICAL_XPROP_DURATION);
+    if(durationProperty != NULL){
+        bool ok;
+        int seconds = QString(icalproperty_get_x(durationProperty)).toInt(&ok);
+        if(ok){
+            span->mIsFix = true;
+            span->mFixDuration = TimeSpan(seconds*1000);
+        }else{
+            qWarning() << "Can not parse" << ICAL_XPROP_DURATION << " = " << icalproperty_get_x(durationProperty);
+        }
+    }
 
     icalproperty* relatedProperty = icalcomponent_get_first_property(c, ICAL_RELATEDTO_PROPERTY);
     if(relatedProperty != NULL){

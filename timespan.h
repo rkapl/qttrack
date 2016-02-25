@@ -9,7 +9,7 @@ struct TimeSpan
 {
 public:
     TimeSpan();
-    TimeSpan(qint64 msec);
+    explicit TimeSpan(qint64 msec);
     QString description(int maxdetail = 2) const;
     TimeSpan& operator+=(const TimeSpan& add);
     TimeSpan operator+(const TimeSpan& b) const;

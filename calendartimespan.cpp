@@ -1,6 +1,7 @@
 #include "calendartimespan.h"
 
 CalendarTimeSpan::CalendarTimeSpan():
+    mIsFix(false),
     mTask(NULL)
 {
 
@@ -15,6 +16,13 @@ QDateTime CalendarTimeSpan::start() const{
 QDateTime CalendarTimeSpan::end() const{
     return mEnd;
 }
+bool CalendarTimeSpan::isFix() const{
+    return mIsFix;
+}
 TimeSpan CalendarTimeSpan::duration() const{
-    return end()-start();
+    if(mIsFix){
+        return mFixDuration;
+    }else{
+        return end()-start();
+    }
 }
