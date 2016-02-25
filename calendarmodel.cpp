@@ -1,6 +1,7 @@
 #include "calendarmodel.h"
 #include "calendartask.h"
 #include "calendartimespan.h"
+#include "libicalflusher.h"
 #include <libical/ical.h>
 #include <QFile>
 #include <QTextStream>
@@ -21,35 +22,68 @@ static icalproperty* icalcomponent_get_first_x_property(icalcomponent* c, const 
     return NULL;
 }
 
-CalendarModel::CalendarModel(QObject *parent): QObject(parent)
+CalendarModel::CalendarModel(QObject *parent):
+    QObject(parent),
+    mIcal(NULL)
 {
-
 }
 QList<CalendarTask*> CalendarModel::rootTasks() const{
     return mRootTasks;
 }
 CalendarModel::~CalendarModel(){
     qDeleteAll(mAllTasks);
+    icalcomponent_free(mIcal);
 }
 bool CalendarModel::load(const QString &path){
     QFile f(path);
-    if(!f.open(QFile::ReadOnly))
+    if(!f.open(QFile::ReadOnly)){
+        emitError(f.errorString());
         return false;
+    }
+
+    LibIcalFlusher _flusher;
     QTextStream in(&f);
-
-
     std::unique_ptr<icalparser, icalparser_deleter> parser(icalparser_new(), icalparser_free);
     icalparser_set_gen_data(parser.get(), &in);
     while(!in.atEnd()){
         QString line = in.readLine();
-        std::unique_ptr<icalcomponent, icalcomponent_deleter>
-                c(icalparser_add_line(parser.get(), line.toUtf8().data()), icalcomponent_free);
-        if(c != NULL){
-            return handleCalendar(c.get());
+        mIcal = icalparser_add_line(parser.get(), line.toUtf8().data());
+        if(mIcal != NULL){
+            if(icalcomponent_count_errors(mIcal) != 0){
+                reportIcalError(mIcal);
+                return false;
+            }else{
+                return handleCalendar(mIcal);
+            }
         }
     }
-    return true;
+
+    emitError(tr("File does not contain valid calendar"));
+    return false;
 }
+bool CalendarModel::reportIcalError(icalcomponent *c){
+    // try to find ical errors in properties or sub-properties
+    for(icalproperty* p = icalcomponent_get_first_property(c,ICAL_XLICERROR_PROPERTY);
+        p != NULL;
+        p = icalcomponent_get_next_property(c,ICAL_XLICERROR_PROPERTY))
+    {
+        emitError(icalproperty_get_xlicerror(p));
+        return true;
+    }
+
+    for(icalcomponent* cc = icalcomponent_get_first_component(c, ICAL_ANY_COMPONENT);
+        cc != NULL;
+        cc = icalcomponent_get_next_component(cc, ICAL_ANY_COMPONENT)){
+        if(reportIcalError(cc))
+            return true;
+    }
+
+    return false;
+}
+void CalendarModel::emitError(const QString &problem){
+    emit error(tr("iCal Calendar File"), problem);
+}
+
 /**
  * @brief Handles one iCal calendar and stores all its TODOs and EVENTs into the internal structures
  */
@@ -60,6 +94,11 @@ bool CalendarModel::handleCalendar(icalcomponent *c){
         prodid = icalproperty_get_prodid(prodidProperty);
     }
     qDebug() << "Reading calendar produced by: " << prodid;
+
+    if(prodid != ICAL_PRODID_QTTRACK){
+        emit readingThirdPartyFormat();
+    }
+
 
     icalcomponent* sub = icalcomponent_get_first_component(c, ICAL_VTODO_COMPONENT);
     TaskMap tasks;

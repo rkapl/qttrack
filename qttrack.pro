@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     treecalendarmodel.cpp \
     timespan.cpp \
     timelistdialog.cpp \
-    tasklistwindow.cpp
+    tasklistwindow.cpp \
+    libicalflusher.cpp
 
 HEADERS  += \
     calendartask.h \
@@ -28,7 +29,8 @@ HEADERS  += \
     treecalendarmodel.h \
     timespan.h \
     timelistdialog.h \
-    tasklistwindow.h
+    tasklistwindow.h \
+    libicalflusher.h
 
 FORMS    += timetablewindow.ui \
     timelistdialog.ui

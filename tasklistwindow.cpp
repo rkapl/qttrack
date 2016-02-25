@@ -27,6 +27,9 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
 
     ui->actionOpen->setIcon(this->style()->standardIcon(QStyle::SP_DialogOpenButton));
 }
+void TaskListWindow::showError(const QString &from, const QString &text){
+    QMessageBox::critical(this, from, text);
+}
 CalendarTask* TaskListWindow::selectedTask() const{
     auto smodel = ui->treeView->selectionModel();
     if(smodel != NULL && !smodel->selection().isEmpty())
@@ -117,20 +120,23 @@ void TaskListWindow::clearModel(){
     mActiveTask = NULL;
     updateActiveTaskUi();
 
-    if(mModel != NULL)
-        delete mModel;
-    if(mTreeModel != NULL)
-        delete mTreeModel;
+    delete mModel;
+    delete mTreeModel;
+    mModel = NULL;
+    mTreeModel = NULL;
 }
 
 void TaskListWindow::openFile(const QString& fileName){
     if(!fileName.isEmpty()){
         clearModel();
         mModel = new CalendarModel(this);
-        mTreeModel = new TreeCalendarModel(mModel, this);
+        connect(mModel, &CalendarModel::error, this, &TaskListWindow::showError);
+
         if(!mModel->load(fileName)){
-            QMessageBox::critical(this, "Error", "Can not load KTimeTracker file");
+            return;
         }
+
+        mTreeModel = new TreeCalendarModel(mModel, this);
 
         // set-up UI (model-dependent)
         ui->treeView->setModel(mTreeModel);

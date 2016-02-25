@@ -26,6 +26,7 @@ public slots:
     void openFile(const QString& fileName);
     void toggleTask();
     void clearModel();
+    void showError(const QString& from, const QString& text);
 private slots:
     void taskSelectionChanged(const QItemSelection&, const QItemSelection& );
     void timeDetailsForCurrentSelection();

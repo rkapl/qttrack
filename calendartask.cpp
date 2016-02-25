@@ -74,6 +74,7 @@ CalendarTimeSpan* CalendarTask::stopLogging(const QDateTime& endDate){
     return mTimeSpans.back();
 }
 CalendarTimeSpan* CalendarTask::addFix(const QDateTime &startDate, const TimeSpan& duration){
+    Q_ASSERT(!isLogging());
     CalendarTimeSpan* span = new CalendarTimeSpan();
     span->mStart = startDate;
     span->mIsFix = true;
