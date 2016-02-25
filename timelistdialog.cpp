@@ -27,30 +27,54 @@ TimeListDialog::TimeListDialog(QWidget *parent) :
     ui(new Ui::TimeListDialog)
 {
     ui->setupUi(this);
-    ui->treeWidget->setColumnCount(3);
-    ui->treeWidget->setHeaderLabels(QStringList{tr("Start"), tr("Duration"), tr("End")});
+    connect(ui->expandDates, &QPushButton::clicked, ui->treeWidget, &QTreeWidget::expandAll);
+    connect(ui->recursive, &QCheckBox::toggled, this, &TimeListDialog::updateTree);
+
+
     ui->treeWidget->setAlternatingRowColors(true);
+
+}
+void TimeListDialog::setContent(CalendarTask *task){
+    mCurrentTask = task;
+    updateTree();
+}
+void TimeListDialog::updateTree(){
+    if(mCurrentTask == NULL) return;
+    bool recursive =  ui->recursive->isChecked();
+    ui->treeWidget->clear();
+    ui->summary->setText(mCurrentTask->summary());
+    ui->timeSpent->setText(mCurrentTask->duration(recursive).description(TimeSpan::MAX_DETAIL));
+
+    ui->treeWidget->setColumnCount(recursive ? 4 : 3);
+    QStringList headerLabels{tr("Start"), tr("Duration"), tr("End")};
+    if(recursive)
+        headerLabels.append(tr("Task"));
+    ui->treeWidget->setHeaderLabels(headerLabels);
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-}
-void TimeListDialog::setContent(CalendarTask *task){
-    ui->treeWidget->clear();
-    ui->summary->setText(task->summary());
-    ui->timeSpent->setText(task->duration(false).description(TimeSpan::MAX_DETAIL));
+    if(recursive)
+        ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
+    // Walk throught the time spans and create the tree structure (with nodes for years, months, days and spans).
+    // The `walker` keeps track of the name we are in now.
     TimeListTimeWalker walker = {
         -1, NULL, TimeSpan(),
         -1, NULL, TimeSpan(),
         -1, NULL, TimeSpan(),
     };
-    for(auto span: task->timeSpans()){
+
+    QFont italic;
+    italic.setItalic(true);
+
+    for(auto span: mCurrentTask->timeSpans(recursive)){
         updateWalker(walker, span);
         QTreeWidgetItem* item = new QTreeWidgetItem(walker.dayItem);
         item->setData(0, Qt::DisplayRole, span->start().time());
         item->setData(1, Qt::DisplayRole, span->duration().description());
         if(span->isFix()){
             item->setData(2, Qt::DisplayRole, tr("Time Fix"));
+            item->setData(2, Qt::FontRole, italic);
         }else{
             // display only time (not date) if the start date is the same as end date
             if(span->start().date() != span->end().date()){
@@ -58,6 +82,9 @@ void TimeListDialog::setContent(CalendarTask *task){
             }else{
                 item->setData(2, Qt::DisplayRole, span->end().time());
             }
+        }
+        if(recursive){
+            item->setData(3, Qt::DisplayRole, span->task()->summary());
         }
     }
 
@@ -70,6 +97,7 @@ void TimeListDialog::updateItemWithDuration(QTreeWidgetItem* item, const TimeSpa
         item->setData(1, Qt::DisplayRole, duration.description(TimeSpan::MAX_DETAIL));
 }
 void TimeListDialog::updateWalker(TimeListTimeWalker &walker, CalendarTimeSpan *span){
+    // TODO: maybe also track of the tasks done in the given year/month/day and display them as list?
     QDate start = span->start().date();
 
     if(start.year() != walker.year){

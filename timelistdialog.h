@@ -21,8 +21,10 @@ public:
     explicit TimeListDialog(QWidget *parent = 0);
     void setContent(CalendarTask* task);
     ~TimeListDialog();
-
+private slots:
+    void updateTree();
 private:
+    CalendarTask* mCurrentTask;
     /**
      * @brief If the start day in `walker` is different than in `span`, create a new
      * widget item for the new day (and possible also year and month).

@@ -19,7 +19,7 @@ public:
     /**
      * Time spans will be sorted by their start date
      */
-    QList<CalendarTimeSpan*> timeSpans() const;
+    QList<CalendarTimeSpan*> timeSpans(bool recursive = false) const;
     QString summary() const;
     TimeSpan duration(bool recursive) const;
     ~CalendarTask();

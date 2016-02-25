@@ -27,8 +27,16 @@ QList<CalendarTask*> CalendarTask::subtasks() const{
 QString CalendarTask::summary() const{
     return mSummary;
 }
-QList<CalendarTimeSpan*> CalendarTask::timeSpans() const{
-    return mTimeSpans;
+QList<CalendarTimeSpan*> CalendarTask::timeSpans(bool recursive) const{
+    if(recursive){
+        QList<CalendarTimeSpan*> spans(timeSpans());
+        for(CalendarTask* subtask: subtasks()){
+            spans += subtask->timeSpans(true);
+        }
+        return spans;
+    }else{
+        return mTimeSpans;
+    }
 }
 TimeSpan CalendarTask::duration(bool recursive) const{
     if(!mDurationCacheValid){
