@@ -120,7 +120,7 @@ QDateTime CalendarModel::icalToQt(const icaltimetype& time){
     QDate d(utc.year, utc.month, utc.day);
     QTime t(utc.hour, utc.minute, utc.second);
     QDateTime date(d, t, Qt::UTC);
-    return date;
+    return date.toLocalTime();
 }
 void CalendarModel::handleTodo(icalcomponent *c, TaskMap& tasks){
     QScopedPointer<CalendarTask> task(new CalendarTask());

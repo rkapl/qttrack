@@ -14,7 +14,7 @@
    <string>Q Time Tracker</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <property name="spacing">
      <number>0</number>
     </property>
@@ -46,6 +46,79 @@
       </attribute>
      </widget>
     </item>
+    <item>
+     <widget class="QWidget" name="activeTaskInfoPane" native="true">
+      <property name="styleSheet">
+       <string notr="true">background-color:#209E1B;
+color: white;</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QWidget" name="widget" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Started:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="activeTaskStart">
+            <property name="text">
+             <string notr="true">10:10</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="activeTaskTime">
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string notr="true">20 m</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="activeTaskSummary">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+          </font>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="text">
+          <string notr="true">Task Name</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -63,6 +136,7 @@
    </attribute>
    <addaction name="actionOpen"/>
    <addaction name="actionTaskListing"/>
+   <addaction name="actionToggleTask"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -87,6 +161,14 @@
    </property>
    <property name="toolTip">
     <string>Show when have you worked on the selected task</string>
+   </property>
+  </action>
+  <action name="actionToggleTask">
+   <property name="text">
+    <string notr="true">Toggle Task</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
    </property>
   </action>
  </widget>

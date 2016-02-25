@@ -11,6 +11,7 @@ class CalendarModel;
 class CalendarTimeSpan
 {
     friend class CalendarModel;
+    friend class CalendarTask;
 public:
     CalendarTimeSpan();
     CalendarTask* task() const;

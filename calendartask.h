@@ -16,12 +16,18 @@ public:
     CalendarModel* model() const;
     CalendarTask* parent() const;
     QList<CalendarTask*> subtasks() const;
+    QString summary() const;
+
     /**
      * Time spans will be sorted by their start date
      */
     QList<CalendarTimeSpan*> timeSpans(bool recursive = false) const;
-    QString summary() const;
     TimeSpan duration(bool recursive) const;
+    CalendarTimeSpan* startLogging(const QDateTime& startDate);
+    CalendarTimeSpan* stopLogging(const QDateTime &endDate);
+    CalendarTimeSpan* addFix(const QDateTime& startDate, const TimeSpan& duration);
+    bool isLogging() const;
+
     ~CalendarTask();
 private:
     /**
@@ -29,6 +35,7 @@ private:
      * Fills in creation, modification and generates ID.
      */
     void prepareNew();
+    void invalidateTimes();
 
     mutable bool mDurationCacheValid;
     mutable TimeSpan mDuration;
@@ -43,6 +50,7 @@ private:
     QString mSummary;
     QList<CalendarTask*> mSubtasks;
     QList<CalendarTimeSpan*> mTimeSpans;
+    CalendarTimeSpan* mCurrentlyLogging;
 };
 
 #endif // CALENDARTASK_H

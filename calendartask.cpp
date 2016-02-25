@@ -1,11 +1,13 @@
 #include "calendartask.h"
 #include "calendartimespan.h"
 #include <QUuid>
+#include <QDebug>
 
 CalendarTask::CalendarTask():
     mDurationCacheValid(false),
     mModel(NULL),
-    mParent(NULL)
+    mParent(NULL),
+    mCurrentlyLogging(false)
 {
 
 }
@@ -53,6 +55,40 @@ TimeSpan CalendarTask::duration(bool recursive) const{
     }
     return recursive ? mDurationRecursive : mDuration;
 }
+CalendarTimeSpan* CalendarTask::startLogging(const QDateTime& startDate){
+    Q_ASSERT(!isLogging());
+    mCurrentlyLogging = new CalendarTimeSpan();
+    mCurrentlyLogging->mTask = this;
+    mCurrentlyLogging->mStart = startDate;
+    return mCurrentlyLogging;
+}
+CalendarTimeSpan* CalendarTask::stopLogging(const QDateTime& endDate){
+    Q_ASSERT(isLogging());
+    mCurrentlyLogging->mEnd = endDate;
+    mTimeSpans.append(mCurrentlyLogging);
+    mCurrentlyLogging = NULL;
+    invalidateTimes();
+    return mTimeSpans.back();
+}
+CalendarTimeSpan* CalendarTask::addFix(const QDateTime &startDate, const TimeSpan& duration){
+    CalendarTimeSpan* span = new CalendarTimeSpan();
+    span->mStart = startDate;
+    span->mIsFix = true;
+    span->mFixDuration = duration;
+    span->mTask = this;
+    mTimeSpans.append(span);
+    invalidateTimes();
+    return span;
+}
+void CalendarTask::invalidateTimes(){
+    mDurationCacheValid = false;
+    if(parent() != NULL)
+        parent()->invalidateTimes();
+}
+bool CalendarTask::isLogging() const{
+    return mCurrentlyLogging != NULL;
+}
 CalendarTask::~CalendarTask(){
     qDeleteAll(mTimeSpans);
+    delete mCurrentlyLogging;
 }
