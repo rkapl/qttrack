@@ -83,9 +83,7 @@ bool CalendarModel::handleCalendar(icalcomponent *c){
     }
 
     for(CalendarTask* t: mAllTasks){
-        qSort(t->mTimeSpans.begin(), t->mTimeSpans.end(), [](CalendarTimeSpan* a, CalendarTimeSpan* b){
-           return a->start() < b->start();
-        });
+        sortSpans(t->mTimeSpans);
     }
 
     return true;
@@ -122,6 +120,12 @@ QDateTime CalendarModel::icalToQt(const icaltimetype& time){
     QDateTime date(d, t, Qt::UTC);
     return date.toLocalTime();
 }
+void CalendarModel::sortSpans(QList<CalendarTimeSpan*>& spans){
+    qSort(spans.begin(), spans.end(), [](CalendarTimeSpan* a, CalendarTimeSpan* b){
+       return a->start() < b->start();
+    });
+}
+
 void CalendarModel::handleTodo(icalcomponent *c, TaskMap& tasks){
     QScopedPointer<CalendarTask> task(new CalendarTask());
 

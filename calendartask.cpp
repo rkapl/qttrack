@@ -1,5 +1,7 @@
 #include "calendartask.h"
 #include "calendartimespan.h"
+#include "calendarmodel.h"
+#include <QtAlgorithms>
 #include <QUuid>
 #include <QDebug>
 
@@ -7,7 +9,7 @@ CalendarTask::CalendarTask():
     mDurationCacheValid(false),
     mModel(NULL),
     mParent(NULL),
-    mCurrentlyLogging(false)
+    mCurrentlyLogging(NULL)
 {
 
 }
@@ -35,6 +37,7 @@ QList<CalendarTimeSpan*> CalendarTask::timeSpans(bool recursive) const{
         for(CalendarTask* subtask: subtasks()){
             spans += subtask->timeSpans(true);
         }
+        CalendarModel::sortSpans(spans);
         return spans;
     }else{
         return mTimeSpans;

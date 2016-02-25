@@ -7,6 +7,7 @@
 #include <QObject>
 
 class CalendarTask;
+class CalendarTimeSpan;
 
 class CalendarModel: public QObject
 {
@@ -15,6 +16,8 @@ public:
     CalendarModel(QObject* parent = NULL);
     bool load(const QString& path);
     QList<CalendarTask*> rootTasks() const;
+
+    static void sortSpans(QList<CalendarTimeSpan *> &spans);
     ~CalendarModel();
 private:
     static constexpr const char* ICAL_XPROP_DURATION = "X-KDE-ktimetracker-duration";
