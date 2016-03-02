@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QBoxLayout>
 #include <QLineEdit>
+#include <QTextStream>
 
 #include "calendarmodel.h"
 #include "treecalendarmodel.h"
@@ -27,6 +28,8 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     connect(ui->actionTaskListing, &QAction::triggered, this, &TaskListWindow::timeDetailsForCurrentSelection);
     connect(ui->actionToggleTask, &QAction::triggered, this, &TaskListWindow::toggleTask);
     connect(ui->actionFixTaskTime, &QAction::triggered, [this]{fixTimeFor(selectedTask());});
+    connect(ui->actionAddTask, &QAction::triggered, this, &TaskListWindow::addNewTask);
+    connect(ui->actionRemoveTask, &QAction::triggered, this, &TaskListWindow::removeSelectedTask);
     connect(&mActiveTaskTimeUpdater, &QTimer::timeout, this, &TaskListWindow::updateActiveTaskTicker);
 
     QWidgetAction* fixMenuAction = new QWidgetAction(this);
@@ -42,6 +45,36 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
 }
 void TaskListWindow::showError(const QString &from, const QString &text){
     QMessageBox::critical(this, from, text);
+}
+void TaskListWindow::addNewTask(){
+    mModel->addTask(NULL, "New Task");
+}
+void TaskListWindow::removeSelectedTask(){
+    if(selectedTask() != NULL){
+        bool warnTooMuchTime = selectedTask()->duration(false).msec > DELETE_WARNING_TRESHOLD_MSEC;
+        bool warnSubtasks = selectedTask()->subtasks().length() > 0;
+        if(warnTooMuchTime || warnSubtasks){
+            QMessageBox box(this);
+            box.setTextFormat(Qt::RichText);
+            box.setWindowTitle("Confirm task deletion");
+            box.setIcon(QMessageBox::Warning);
+            box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
+            box.setDefaultButton(QMessageBox::No);
+            QString message;
+            QTextStream stream(&message);
+            stream << "Are You sure You want to delete the task named <b>" << selectedTask()->summary() << "</b>?";
+            stream <<" It can not be undone, so be aware that: <ul>";
+            if(warnSubtasks)
+                stream << "<li>You will delete the task including all its subtasks</li>";
+            if(warnTooMuchTime)
+                stream << "<li>You have already spent significant amount of time working on this task</li>";
+            stream << "</ul>";
+            box.setText(message);
+            if(box.exec() !=  QMessageBox::Yes)
+                return;
+        }
+        mModel->removeTask(selectedTask());
+    }
 }
 void TaskListWindow::fixTimeFor(CalendarTask *task){
     if(task == NULL) return;

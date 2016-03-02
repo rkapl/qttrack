@@ -30,6 +30,8 @@ public slots:
     void toggleTask();
     void clearModel();
     void showError(const QString& from, const QString& text);
+    void addNewTask();
+    void removeSelectedTask();
 private slots:
     void taskSelectionChanged(const QItemSelection&, const QItemSelection& );
     void timeDetailsForCurrentSelection();
@@ -39,6 +41,7 @@ private slots:
     void modelExistenceChanged();
 private:
     static constexpr int LOGGING_SAVE_FREQUENCY = 60*1000;
+    static constexpr qint64 DELETE_WARNING_TRESHOLD_MSEC = 5 * 60 * 1000;
 
     /**
      * @brief Updates the green bar at bottom of the window.

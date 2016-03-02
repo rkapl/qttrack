@@ -8,6 +8,9 @@
 
 class CalendarTask;
 
+/**
+ * @brief This widget is meant to be embedded inside menus etc. , because it provides explicit one-time action.
+ */
 class FixTimeWidget: public QWidget
 {
     Q_OBJECT

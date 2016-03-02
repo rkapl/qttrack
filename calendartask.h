@@ -39,6 +39,7 @@ private:
     void prepareNew();
     void invalidateTimes();
     void save(const QDateTime &now, icalcomponent* root);
+    void deleteBackings();
 
     mutable bool mDurationCacheValid;
     mutable TimeSpan mDuration;

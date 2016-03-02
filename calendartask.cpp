@@ -50,6 +50,23 @@ void CalendarTask::save(const QDateTime& now, icalcomponent *root){
     CalendarModel::updateProperty(mBacking, ICAL_SUMMARY_PROPERTY,
                                   icalproperty_new_summary(summary().toUtf8().data()));
 }
+void CalendarTask::deleteBackings(){
+    // delete backings
+    if(mBacking  != NULL){
+        icalcomponent_remove_component(model()->mIcal, mBacking);
+        icalcomponent_free(mBacking);
+        mBacking = NULL;
+    }
+    for(auto span: timeSpans()){
+        if(span->mBacking != NULL){
+            icalcomponent_remove_component(model()->mIcal, span->mBacking);
+            icalcomponent_free(span->mBacking);
+            span->mBacking = NULL;
+        }
+    }
+    for(auto task: subtasks())
+        task->deleteBackings();
+}
 CalendarModel* CalendarTask::model() const{
     return mModel;
 }

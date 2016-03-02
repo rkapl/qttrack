@@ -21,6 +21,14 @@ public:
     QModelIndex indexForTask(CalendarTask* task, int column = 0) const;
 private slots:
     void taskTimeChanged(CalendarTask* task);
+    void taskAboutToBeAdded(CalendarTask *parent, CalendarTask* task, int position);
+    void taskAdded(CalendarTask *parent, CalendarTask* task, int position);
+    void taskAboutToBeRemoved(CalendarTask *parent, CalendarTask* task, int position);
+    void taskRemoved(CalendarTask *parent, CalendarTask* task, int position);
+    void taskAboutToBeMoved(CalendarTask* task, CalendarTask* oldParent, CalendarTask* newParent,
+                            int oldPosition, int newPosition);
+    void taskMoved(CalendarTask* task, CalendarTask* oldParent, CalendarTask* newParent,
+                   int oldPosition, int newPosition);
 private:
     CalendarModel* mModel;
 };

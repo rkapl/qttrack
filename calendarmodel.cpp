@@ -295,7 +295,7 @@ void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
     icalproperty* durationProperty = icalcomponent_get_first_x_property(c, ICAL_XPROP_DURATION);
     if(durationProperty != NULL){
         bool ok;
-        quint64 seconds = QString(icalproperty_get_x(durationProperty)).toULongLong(&ok);
+        qint64 seconds = QString(icalproperty_get_x(durationProperty)).toLongLong(&ok);
         if(ok){
             span->mIsFix = true;
             span->mFixDuration = TimeSpan(seconds*1000);
@@ -326,6 +326,34 @@ void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
     //          << "(" << span->duration().msec << " ms)";
     task->mTimeSpans.append(span.take());
 
+}
+CalendarTask* CalendarModel::addTask(CalendarTask *parent, const QString &name){
+    QScopedPointer<CalendarTask> task(new CalendarTask());
+    task->prepareNew();
+    task->mSummary = name;
+    task->mParent = parent;
+    task->mModel = this;
+
+    QList<CalendarTask*>& taskList = (parent == NULL) ? mRootTasks : parent->mSubtasks;
+    emit taskAboutToBeAdded(parent, task.data(), taskList.length());
+    taskList.append(task.data());
+    CalendarTask* taskRaw = task.take();
+    mAllTasks.append(taskRaw);
+    emit taskAdded(parent, taskRaw, taskList.length() - 1);
+    requestSave();
+    return taskRaw;
+}
+void CalendarModel::removeTask(CalendarTask *task){
+    QList<CalendarTask*>& taskList = (task->parent() == NULL) ? mRootTasks : task->parent()->mSubtasks;
+    int index = taskList.indexOf(task);
+
+    emit taskAboutToBeRemoved(task->parent(), task, index);
+    QScopedPointer<CalendarTask> taskDeleter(task);
+    mAllTasks.removeOne(task);
+    taskList.removeOne(task);
+    task->deleteBackings();
+    emit taskRemoved(task->parent(), task, index);
+    requestSave();
 }
 
 void CalendarModel::informTimesChanged(CalendarTask* task){

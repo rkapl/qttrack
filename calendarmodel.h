@@ -46,14 +46,15 @@ public:
      */
     bool load(const QString& path);
     QList<CalendarTask*> rootTasks() const;
-
-
-    // helpers
-
     /**
      * @param now Explicit time for testing determinism.
      */
     void doSave(const QDateTime& now);
+    CalendarTask* addTask(CalendarTask* parent, const QString& name);
+    void moveTask(CalendarTask* task, CalendarTask* newParent);
+    void removeTask(CalendarTask* task);
+
+    // helpers
     static void sortSpans(QList<CalendarTimeSpan *> &spans);
     static bool hasRequiredProperties(const QList<icalproperty_kind>& required, icalcomponent *c);
     static void deleteProperty(icalcomponent* c, icalproperty_kind kind);
@@ -83,6 +84,14 @@ signals:
      * @brief Task details (such as summary) have changed
      */
     void taskChanged(CalendarTask* task);
+    void taskAboutToBeAdded(CalendarTask* parent, CalendarTask* task, int position);
+    void taskAdded(CalendarTask* parent, CalendarTask* task, int position);
+    void taskAboutToBeRemoved(CalendarTask *parent, CalendarTask* task, int position);
+    void taskRemoved(CalendarTask *parent, CalendarTask* task, int position);
+    void taskAboutToBeMoved(CalendarTask* task, CalendarTask* oldParent, CalendarTask* newParent,
+                            int oldPosition, int newPosition);
+    void taskMoved(CalendarTask* task, CalendarTask* oldParent, CalendarTask* newParent,
+                   int oldPosition, int newPosition);
 private:
     using TaskMap = QHash<QString, CalendarTask*>;
 
