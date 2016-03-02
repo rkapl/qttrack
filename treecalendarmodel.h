@@ -17,7 +17,10 @@ public:
     int columnCount(const QModelIndex &parent) const;
     QVariant data(const QModelIndex &index, int role) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
-    CalendarTask *taskForIndex(const QModelIndex& idx);
+    CalendarTask *taskForIndex(const QModelIndex& idx) const;
+    QModelIndex indexForTask(CalendarTask* task, int column = 0) const;
+private slots:
+    void taskTimeChanged(CalendarTask* task);
 private:
     CalendarModel* mModel;
 };

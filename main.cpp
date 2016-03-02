@@ -1,7 +1,9 @@
 #include "tasklistwindow.h"
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QtTest/QTest>
 #include <stdio.h>
+#include "tests/calendarmodeltest.h"
 
 int main(int argc, char *argv[])
 {
@@ -11,8 +13,21 @@ int main(int argc, char *argv[])
 
     QCommandLineParser cmdline;
     cmdline.addHelpOption();
+    cmdline.addVersionOption();
     cmdline.addPositionalArgument("calendar-file", "Calendar file to open (in KTimeTracker format)", "[calendar-file]");
+#ifdef TESTS
+    QCommandLineOption optTests("tests", "Run built-in tests");
+    cmdline.addOption(optTests);
+#endif
     cmdline.process(a);
+
+#ifdef TESTS
+    if(cmdline.isSet(optTests)){
+        QStringList args = a.arguments();
+        args.removeAll("--tests");
+        return QTest::qExec(new CalendarModelTest(), args);
+    }
+#endif
 
     TaskListWindow w;
     w.show();

@@ -3,6 +3,9 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
+#include <QBoxLayout>
+#include <QLineEdit>
+
 #include "calendarmodel.h"
 #include "treecalendarmodel.h"
 #include "timelistdialog.h"
@@ -23,12 +26,29 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     connect(ui->treeView, &QTreeView::doubleClicked, this, &TaskListWindow::timeDetailsForSelection);
     connect(ui->actionTaskListing, &QAction::triggered, this, &TaskListWindow::timeDetailsForCurrentSelection);
     connect(ui->actionToggleTask, &QAction::triggered, this, &TaskListWindow::toggleTask);
+    connect(ui->actionFixTaskTime, &QAction::triggered, [this]{fixTimeFor(selectedTask());});
     connect(&mActiveTaskTimeUpdater, &QTimer::timeout, this, &TaskListWindow::updateActiveTaskTicker);
 
-    ui->actionOpen->setIcon(this->style()->standardIcon(QStyle::SP_DialogOpenButton));
+    QWidgetAction* fixMenuAction = new QWidgetAction(this);
+    fixMenuAction->setDefaultWidget(&mFixTimeMenuWidget);
+    mFixTimeMenu.addAction(fixMenuAction);
+    connect(&mFixTimeMenuWidget, &FixTimeWidget::done, &mFixTimeMenu, &QMenu::close);
+
+    mPlay = QIcon(":/icons/start.svg");
+    mStop = QIcon(":/icons/stop.svg");
+
+    modelExistenceChanged();
+    updateActiveTaskUi();
 }
 void TaskListWindow::showError(const QString &from, const QString &text){
     QMessageBox::critical(this, from, text);
+}
+void TaskListWindow::fixTimeFor(CalendarTask *task){
+    if(task == NULL) return;
+    if(mActiveTask != NULL) return;
+    auto pos = ui->treeView->visualRect(mTreeModel->indexForTask(task, 1)).bottomLeft();
+    mFixTimeMenuWidget.setTarget(task);
+    mFixTimeMenu.exec(ui->treeView->viewport()->mapToGlobal(pos));
 }
 CalendarTask* TaskListWindow::selectedTask() const{
     auto smodel = ui->treeView->selectionModel();
@@ -54,6 +74,7 @@ void TaskListWindow::toggleTask(){
     }
 
     updateActiveTaskUi();
+    taskSelectionChanged(QItemSelection(), QItemSelection());
 }
 void TaskListWindow::updateActiveTaskUi(){
     bool previousVisibility = ui->activeTaskInfoPane->isVisible();
@@ -65,12 +86,14 @@ void TaskListWindow::updateActiveTaskUi(){
         ui->activeTaskSummary->setText(mActiveTask->summary());
         updateActiveTaskTicker();
         mActiveTaskTimeUpdater.start(1000);
+        mPeriodicSave.start(LOGGING_SAVE_FREQUENCY);
     }else{
         if(previousVisibility)
             resize(size().width(), size().height() - ui->activeTaskInfoPane->size().height());
 
         ui->activeTaskInfoPane->setVisible(false);
         mActiveTaskTimeUpdater.stop();
+        mPeriodicSave.stop();
     }
 }
 void TaskListWindow::updateActiveTaskTicker(){
@@ -93,24 +116,31 @@ void TaskListWindow::timeDetailsFor(CalendarTask* task){
         timeList.exec();
     }
 }
+void TaskListWindow::modelExistenceChanged(){
+    ui->actionAddTask->setEnabled(mModel != NULL);
+    ui->actionRemoveTask->setEnabled(mModel != NULL);
+}
 void TaskListWindow::taskSelectionChanged(const QItemSelection &, const QItemSelection&){
     CalendarTask* selected = selectedTask();
     bool enabled = selected != NULL;
     ui->actionTaskListing->setEnabled(enabled);
     ui->actionToggleTask->setEnabled(enabled);
 
-    if(selected != NULL){
-        ui->actionToggleTask->setIcon(this->style()->standardIcon(QStyle::SP_MediaPlay));
+    if(selected != NULL && selected != mActiveTask){
+        ui->actionToggleTask->setIcon(mPlay);
         ui->actionToggleTask->setText("Log time for selected task");
         ui->actionToggleTask->setEnabled(true);
     }else if(mActiveTask != NULL){
-        ui->actionToggleTask->setIcon(this->style()->standardIcon(QStyle::SP_MediaStop));
+        ui->actionToggleTask->setIcon(mStop);
         ui->actionToggleTask->setText("Stop tracking time");
         ui->actionToggleTask->setEnabled(true);
     }else{
-        ui->actionToggleTask->setIcon(this->style()->standardIcon(QStyle::SP_MediaPlay));
+        ui->actionToggleTask->setIcon(mPlay);
         ui->actionToggleTask->setEnabled(false);
     }
+
+
+    ui->actionFixTaskTime->setEnabled(selected != NULL && mActiveTask != selected);
 }
 void TaskListWindow::openFileWithDialog(){
     openFile(QFileDialog::getOpenFileName(this, "Open time track", "", "KTimeTracker (*.ics)"));
@@ -119,6 +149,7 @@ void TaskListWindow::openFileWithDialog(){
 void TaskListWindow::clearModel(){
     mActiveTask = NULL;
     updateActiveTaskUi();
+    modelExistenceChanged();
 
     delete mModel;
     delete mTreeModel;
@@ -131,6 +162,7 @@ void TaskListWindow::openFile(const QString& fileName){
         clearModel();
         mModel = new CalendarModel(this);
         connect(mModel, &CalendarModel::error, this, &TaskListWindow::showError);
+        connect(&mPeriodicSave, &QTimer::timeout, mModel, &CalendarModel::requestSave);
 
         if(!mModel->load(fileName)){
             return;
@@ -146,6 +178,7 @@ void TaskListWindow::openFile(const QString& fileName){
         ui->treeView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
         ui->treeView->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
         ui->treeView->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+        modelExistenceChanged();
     }
 }
 TaskListWindow::~TaskListWindow()
@@ -153,6 +186,9 @@ TaskListWindow::~TaskListWindow()
     if(mActiveTask){
         mActiveTask->stopLogging(QDateTime::currentDateTime());
         mActiveTask = NULL;
+    }
+    if(mModel){
+        mModel->doSave(QDateTime::currentDateTimeUtc());
     }
 
     delete ui;

@@ -1,0 +1,2 @@
+The icons in this program come from the Tango and GNOME projects and are licencesed
+under following licence: http://creativecommons.org/licenses/by-sa/3.0/ .

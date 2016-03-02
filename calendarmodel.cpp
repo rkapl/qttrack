@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QHash>
 #include <QtAlgorithms>
+#include <QSaveFile>
 
 typedef void (*icalparser_deleter)(icalparser*);
 typedef void (*icalcomponent_deleter)(icalcomponent*);
@@ -32,9 +33,11 @@ QList<CalendarTask*> CalendarModel::rootTasks() const{
 }
 CalendarModel::~CalendarModel(){
     qDeleteAll(mAllTasks);
+    qDebug() << "Deallocating model";
     icalcomponent_free(mIcal);
 }
 bool CalendarModel::load(const QString &path){
+    mFileName = path;
     QFile f(path);
     if(!f.open(QFile::ReadOnly)){
         emitError(f.errorString());
@@ -159,6 +162,66 @@ QDateTime CalendarModel::icalToQt(const icaltimetype& time){
     QDateTime date(d, t, Qt::UTC);
     return date.toLocalTime();
 }
+icaltimetype CalendarModel::qtToIcal(const QDateTime & timeAny){
+    QDateTime time = timeAny.toUTC();
+    icaltimetype utc;
+    memset(&utc, 0, sizeof(utc));
+    utc.is_utc = 1;
+    utc.zone = icaltimezone_get_utc_timezone();
+    utc.day = time.date().day();
+    utc.month = time.date().month();
+    utc.year = time.date().year();
+    utc.hour = time.time().hour();
+    utc.minute = time.time().minute();
+    utc.second = time.time().second();
+    return utc;
+}
+void CalendarModel::deleteXProperty(icalcomponent *c, const QString& name){
+    QList<icalproperty*> deleteList;
+    for(icalproperty* p = icalcomponent_get_first_property(c, ICAL_X_PROPERTY);
+        p != NULL;
+        p = icalcomponent_get_next_property(c, ICAL_X_PROPERTY)){
+        if(QString::fromUtf8(icalproperty_get_x(p)) == name){
+            deleteList.append(p);
+        }
+    }
+    for(icalproperty* p : deleteList){
+        icalcomponent_remove_property(c, p);
+        icalproperty_free(p);
+    }
+}
+
+void CalendarModel::deleteProperty(icalcomponent* c, icalproperty_kind kind){
+    QList<icalproperty*> deleteList;
+    for(icalproperty* p = icalcomponent_get_first_property(c, kind);
+        p != NULL;
+        p = icalcomponent_get_next_property(c, kind)){
+        deleteList.append(p);
+    }
+    for(icalproperty* p : deleteList){
+        icalcomponent_remove_property(c, p);
+        icalproperty_free(p);
+    }
+}
+icalproperty* CalendarModel::updateProperty(icalcomponent *c, icalproperty_kind kind, icalproperty *value){
+    deleteProperty(c, kind);
+    icalcomponent_add_property(c, value);
+    return value;
+}
+icalproperty* CalendarModel::updateXProperty(icalcomponent *c, const QString &name, const QString &value){
+    for(icalproperty* p = icalcomponent_get_first_property(c, ICAL_X_PROPERTY);
+        p != NULL;
+        p = icalcomponent_get_next_property(c, ICAL_X_PROPERTY)){
+        if(QString(icalproperty_get_x_name(p)) == name){
+            icalproperty_set_x(p, value.toUtf8());
+            return p;
+        }
+    }
+    icalproperty* p = icalproperty_new_x(value.toUtf8());
+    icalproperty_set_x_name(p, name.toUtf8());
+    icalcomponent_add_property(c, p);
+    return p;
+}
 void CalendarModel::sortSpans(QList<CalendarTimeSpan*>& spans){
     qSort(spans.begin(), spans.end(), [](CalendarTimeSpan* a, CalendarTimeSpan* b){
        return a->start() < b->start();
@@ -174,10 +237,12 @@ void CalendarModel::handleTodo(icalcomponent *c, TaskMap& tasks){
         return;
 
     // TODO: make created and last modified optional ?
+    task->mBacking = c;
     task->mCreated = icalToQt(icalproperty_get_created(icalcomponent_get_first_property(c, ICAL_CREATED_PROPERTY)));
     task->mLastModified = icalToQt(icalproperty_get_lastmodified(icalcomponent_get_first_property(c, ICAL_LASTMODIFIED_PROPERTY)));
-    task->mId = icalproperty_get_uid(icalcomponent_get_first_property(c, ICAL_UID_PROPERTY));
-    task->mSummary = icalproperty_get_summary(icalcomponent_get_first_property(c, ICAL_SUMMARY_PROPERTY));
+    task->mId = QString::fromUtf8(icalproperty_get_uid(icalcomponent_get_first_property(c, ICAL_UID_PROPERTY)));
+    task->mSummary =
+            QString::fromUtf8(icalproperty_get_summary(icalcomponent_get_first_property(c, ICAL_SUMMARY_PROPERTY)));
     task->mParent = NULL;
     task->mModel = this;
 
@@ -192,20 +257,45 @@ void CalendarModel::handleTodo(icalcomponent *c, TaskMap& tasks){
     mAllTasks.append(task.take());
 
 }
+void CalendarModel::requestSave(){
+    doSave(QDateTime::currentDateTimeUtc());
+}
+void CalendarModel::doSave(const QDateTime& now){
+    LibIcalFlusher flusher;
+    CalendarModel::updateProperty(mIcal, ICAL_PRODID_PROPERTY,
+                                  icalproperty_new_prodid(ICAL_PRODID_QTTRACK));
+    // save only the reachable tasks
+    for(auto t: mRootTasks){
+        t->save(now, mIcal);
+    }
+
+    QSaveFile file(mFileName);
+    if(!file.open(QSaveFile::WriteOnly)){
+        emitError(file.errorString());
+        return;
+    }
+    const char* data = icalcomponent_as_ical_string_r(mIcal);
+    file.write(data);
+    if(!file.commit()){
+        emitError(file.errorString());
+    }
+}
 void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
     QScopedPointer<CalendarTimeSpan> span(new CalendarTimeSpan());
 
-    QList<icalproperty_kind> required{ICAL_DTSTART_PROPERTY, ICAL_DTEND_PROPERTY};
+    QList<icalproperty_kind> required{ICAL_DTSTART_PROPERTY, ICAL_DTEND_PROPERTY, ICAL_UID_PROPERTY};
     if(!hasRequiredProperties(required,c ))
         return;
 
+    span->mBacking = c;
+    span->mId = QString::fromUtf8(icalproperty_get_uid(icalcomponent_get_first_property(c, ICAL_UID_PROPERTY)));
     span->mStart = icalToQt(icalproperty_get_created(icalcomponent_get_first_property(c, ICAL_DTSTART_PROPERTY)));
     span->mEnd = icalToQt(icalproperty_get_created(icalcomponent_get_first_property(c, ICAL_DTEND_PROPERTY)));
 
     icalproperty* durationProperty = icalcomponent_get_first_x_property(c, ICAL_XPROP_DURATION);
     if(durationProperty != NULL){
         bool ok;
-        int seconds = QString(icalproperty_get_x(durationProperty)).toInt(&ok);
+        quint64 seconds = QString(icalproperty_get_x(durationProperty)).toULongLong(&ok);
         if(ok){
             span->mIsFix = true;
             span->mFixDuration = TimeSpan(seconds*1000);
@@ -238,3 +328,7 @@ void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
 
 }
 
+void CalendarModel::informTimesChanged(CalendarTask* task){
+    requestSave();
+    emit timesChanged(task);
+}

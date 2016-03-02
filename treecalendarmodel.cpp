@@ -6,9 +6,16 @@ TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
     QAbstractItemModel(parent),
     mModel(model)
 {
-
+    connect(model, &CalendarModel::timesChanged, this, &TreeCalendarModel::taskTimeChanged);
 }
-CalendarTask* TreeCalendarModel::taskForIndex(const QModelIndex& idx){
+void TreeCalendarModel::taskTimeChanged(CalendarTask *task){
+    QModelIndex index = indexForTask(task,1);
+    while(index.isValid()){
+        emit dataChanged(index, sibling(index.row(), 2, index));
+        index = parent(index);
+    }
+}
+CalendarTask* TreeCalendarModel::taskForIndex(const QModelIndex& idx) const{
     return static_cast<CalendarTask*>(idx.internalPointer());
 }
 QModelIndex TreeCalendarModel::index(int row, int column, const QModelIndex &parent) const{
@@ -25,15 +32,19 @@ QModelIndex TreeCalendarModel::parent(const QModelIndex &child) const{
         if(parent == NULL){
             return QModelIndex();
         }else{
-            int indexInParent;
-            if(parent->parent() == NULL)
-                indexInParent = mModel->rootTasks().indexOf(parent);
-            else
-                indexInParent = parent->parent()->subtasks().indexOf(parent);
-            return createIndex(indexInParent, 0, parent);
+            return indexForTask(parent);
         }
     }
 }
+QModelIndex TreeCalendarModel::indexForTask(CalendarTask *task, int column) const{
+    int indexInParent;
+    if(task->parent() == NULL)
+        indexInParent = mModel->rootTasks().indexOf(task);
+    else
+        indexInParent = task->parent()->subtasks().indexOf(task);
+    return createIndex(indexInParent, column, task);
+}
+
 int TreeCalendarModel::rowCount(const QModelIndex &parent) const{
     if(parent.isValid()){
         return static_cast<CalendarTask*>(parent.internalPointer())->subtasks().length();

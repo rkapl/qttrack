@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QItemSelection>
 #include <QTimer>
+#include <QMenu>
+#include <QWidgetAction>
+#include "fixtimewidget.h"
 
 namespace Ui {
 class TimeTableWindow;
@@ -32,7 +35,11 @@ private slots:
     void timeDetailsForCurrentSelection();
     void timeDetailsForSelection(const QModelIndex& selection);
     void timeDetailsFor(CalendarTask* task);
+    void fixTimeFor(CalendarTask* task);
+    void modelExistenceChanged();
 private:
+    static constexpr int LOGGING_SAVE_FREQUENCY = 60*1000;
+
     /**
      * @brief Updates the green bar at bottom of the window.
      */
@@ -44,9 +51,19 @@ private:
     CalendarModel* mModel;
     TreeCalendarModel* mTreeModel;
 
+    QMenu mFixTimeMenu;
+    FixTimeWidget mFixTimeMenuWidget;
+
+
     CalendarTask* mActiveTask;
     CalendarTimeSpan* mActiveTimeSpan;
     QTimer mActiveTaskTimeUpdater;
+    /**
+     * @brief Active during logging.
+     */
+    QTimer mPeriodicSave;
+    QIcon mPlay;
+    QIcon mStop;
 };
 
 #endif // TIMETABLEWINDOW_H

@@ -4,6 +4,7 @@
 #include <QList>
 #include <QDateTime>
 #include "timespan.h"
+#include <libical/ical.h>
 
 class CalendarModel;
 class CalendarTimeSpan;
@@ -11,6 +12,7 @@ class CalendarTimeSpan;
 class CalendarTask
 {
     friend class CalendarModel;
+    friend class CalendarTimeSpan;
 public:
     CalendarTask();
     CalendarModel* model() const;
@@ -36,6 +38,7 @@ private:
      */
     void prepareNew();
     void invalidateTimes();
+    void save(const QDateTime &now, icalcomponent* root);
 
     mutable bool mDurationCacheValid;
     mutable TimeSpan mDuration;
@@ -45,12 +48,14 @@ private:
     QDateTime mCreated;
     QDateTime mLastModified;
     QString mId;
-    QString mParentId;
     CalendarTask* mParent;
+    // used termporarily when constructing the taskt tree
+    QString mParentId;
     QString mSummary;
     QList<CalendarTask*> mSubtasks;
     QList<CalendarTimeSpan*> mTimeSpans;
     CalendarTimeSpan* mCurrentlyLogging;
+    icalcomponent* mBacking;
 };
 
 #endif // CALENDARTASK_H

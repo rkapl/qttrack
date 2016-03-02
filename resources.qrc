@@ -1,5 +1,11 @@
 <RCC>
     <qresource prefix="/">
         <file>icons/details.svg</file>
+        <file>icons/clock.svg</file>
+        <file>icons/add.svg</file>
+        <file>icons/remove.svg</file>
+        <file>icons/open.svg</file>
+        <file>icons/start.svg</file>
+        <file>icons/stop.svg</file>
     </qresource>
 </RCC>

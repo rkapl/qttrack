@@ -134,11 +134,20 @@ color: white;</string>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionOpen"/>
-   <addaction name="actionTaskListing"/>
    <addaction name="actionToggleTask"/>
+   <addaction name="actionFixTaskTime"/>
+   <addaction name="actionTaskListing"/>
+   <addaction name="separator"/>
+   <addaction name="actionAddTask"/>
+   <addaction name="actionRemoveTask"/>
+   <addaction name="separator"/>
+   <addaction name="actionOpen"/>
   </widget>
   <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/open.svg</normaloff>:/icons/open.svg</iconset>
+   </property>
    <property name="text">
     <string>&amp;Open</string>
    </property>
@@ -164,11 +173,42 @@ color: white;</string>
    </property>
   </action>
   <action name="actionToggleTask">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
+   </property>
    <property name="text">
     <string notr="true">Toggle Task</string>
    </property>
    <property name="shortcut">
     <string>Space</string>
+   </property>
+  </action>
+  <action name="actionFixTaskTime">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/clock.svg</normaloff>:/icons/clock.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fix Task Time</string>
+   </property>
+  </action>
+  <action name="actionAddTask">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/add.svg</normaloff>:/icons/add.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Add task</string>
+   </property>
+  </action>
+  <action name="actionRemoveTask">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/remove.svg</normaloff>:/icons/remove.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Remove selected task</string>
    </property>
   </action>
  </widget>

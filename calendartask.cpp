@@ -9,7 +9,8 @@ CalendarTask::CalendarTask():
     mDurationCacheValid(false),
     mModel(NULL),
     mParent(NULL),
-    mCurrentlyLogging(NULL)
+    mCurrentlyLogging(NULL),
+    mBacking(NULL)
 {
 
 }
@@ -18,7 +19,37 @@ void CalendarTask::prepareNew(){
     mLastModified = QDateTime::currentDateTimeUtc(),
     mId = QUuid::createUuid().toString();
 }
+void CalendarTask::save(const QDateTime& now, icalcomponent *root){
+    for(auto task: subtasks())
+        task->save(now, root);
 
+    for(auto span: mTimeSpans)
+        span->save(root);
+
+    if(mCurrentlyLogging){
+        mCurrentlyLogging->mEnd = now;
+        mCurrentlyLogging->save(root);
+    }
+
+    if(mBacking == NULL){
+        mBacking = icalcomponent_new_vtodo();
+        icalcomponent_add_component(root, mBacking);
+    }
+    CalendarModel::updateProperty(mBacking, ICAL_CREATED_PROPERTY,
+                                  icalproperty_new_created(CalendarModel::qtToIcal(mCreated)));
+    CalendarModel::updateProperty(mBacking, ICAL_LASTMODIFIED_PROPERTY,
+                                  icalproperty_new_lastmodified(CalendarModel::qtToIcal(mLastModified)));
+    CalendarModel::updateProperty(mBacking, ICAL_UID_PROPERTY,
+                                  icalproperty_new_uid(mId.toUtf8().data()));
+    if(parent()){
+        CalendarModel::updateProperty(mBacking, ICAL_RELATEDTO_PROPERTY,
+                                      icalproperty_new_relatedto(parent()->mId.toUtf8().data()));
+    }else{
+        CalendarModel::deleteProperty(mBacking, ICAL_RELATEDTO_PROPERTY);
+    }
+    CalendarModel::updateProperty(mBacking, ICAL_SUMMARY_PROPERTY,
+                                  icalproperty_new_summary(summary().toUtf8().data()));
+}
 CalendarModel* CalendarTask::model() const{
     return mModel;
 }
@@ -61,6 +92,7 @@ TimeSpan CalendarTask::duration(bool recursive) const{
 CalendarTimeSpan* CalendarTask::startLogging(const QDateTime& startDate){
     Q_ASSERT(!isLogging());
     mCurrentlyLogging = new CalendarTimeSpan();
+    mCurrentlyLogging->prepreNew();
     mCurrentlyLogging->mTask = this;
     mCurrentlyLogging->mStart = startDate;
     return mCurrentlyLogging;
@@ -76,6 +108,7 @@ CalendarTimeSpan* CalendarTask::stopLogging(const QDateTime& endDate){
 CalendarTimeSpan* CalendarTask::addFix(const QDateTime &startDate, const TimeSpan& duration){
     Q_ASSERT(!isLogging());
     CalendarTimeSpan* span = new CalendarTimeSpan();
+    span->prepreNew();
     span->mStart = startDate;
     span->mIsFix = true;
     span->mFixDuration = duration;
@@ -85,9 +118,12 @@ CalendarTimeSpan* CalendarTask::addFix(const QDateTime &startDate, const TimeSpa
     return span;
 }
 void CalendarTask::invalidateTimes(){
-    mDurationCacheValid = false;
-    if(parent() != NULL)
-        parent()->invalidateTimes();
+    CalendarTask* current = this;
+    while(current){
+        current->mDurationCacheValid = false;
+        current = current->parent();
+    }
+    model()->informTimesChanged(this);
 }
 bool CalendarTask::isLogging() const{
     return mCurrentlyLogging != NULL;

@@ -4,6 +4,7 @@
 
 #include <QDateTime>
 #include "timespan.h"
+#include <libical/ical.h>
 
 class CalendarTask;
 class CalendarModel;
@@ -14,6 +15,7 @@ class CalendarTimeSpan
     friend class CalendarTask;
 public:
     CalendarTimeSpan();
+    ~CalendarTimeSpan();
     CalendarTask* task() const;
     QDateTime start() const;
     QDateTime end() const;
@@ -28,11 +30,16 @@ public:
      */
     bool isFix() const;
 private:
+    void save(icalcomponent* root);
+    void prepreNew();
+
     bool mIsFix;
     TimeSpan mFixDuration;
+    QString mId;
     QDateTime mStart;
     QDateTime mEnd;
     CalendarTask* mTask;
+    icalcomponent* mBacking;
 };
 
 #endif // CALENDARTIMESPAN_H
