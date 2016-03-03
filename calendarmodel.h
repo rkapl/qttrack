@@ -116,6 +116,7 @@ private:
     void handleTodo(icalcomponent* c, TaskMap& tasks);
     void makeTaskTree(const TaskMap& tasks);
     void informTimesChanged(CalendarTask *task);
+    void informTaskChanged(CalendarTask *task);
 };
 
 

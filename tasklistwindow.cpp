@@ -36,6 +36,7 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     ui->treeView->setAcceptDrops(true);;
     ui->treeView->setDropIndicatorShown(true);
     ui->treeView->setDragDropMode(QAbstractItemView::InternalMove);
+    ui->treeView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
 
     QWidgetAction* fixMenuAction = new QWidgetAction(this);
     fixMenuAction->setDefaultWidget(&mFixTimeMenuWidget);

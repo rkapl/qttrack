@@ -67,6 +67,12 @@ void CalendarTask::deleteBackings(){
     for(auto task: subtasks())
         task->deleteBackings();
 }
+void CalendarTask::setSummary(const QString &summary){
+    if(summary != mSummary){
+        mSummary = summary;
+        model()->informTaskChanged(this);
+    }
+}
 CalendarModel* CalendarTask::model() const{
     return mModel;
 }

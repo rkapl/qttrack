@@ -19,9 +19,12 @@ TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
 Qt::ItemFlags TreeCalendarModel::flags(const QModelIndex &index) const{
     Qt::ItemFlags def = QAbstractItemModel::flags(index);
     if(index.isValid())
-        return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | def;
+        return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsEditable | def;
     else
         return Qt::ItemIsDropEnabled | def;
+}
+QModelIndex TreeCalendarModel::buddy(const QModelIndex &index) const{
+    return index.sibling(index.row(), 0);
 }
 Qt::DropActions TreeCalendarModel::supportedDropActions() const{
     return Qt::MoveAction;
@@ -112,7 +115,7 @@ int TreeCalendarModel::columnCount(const QModelIndex &parent) const{
 }
 QVariant TreeCalendarModel::data(const QModelIndex &index, int role) const{
     CalendarTask* task = static_cast<CalendarTask*>(index.internalPointer());
-    if(role == Qt::DisplayRole){
+    if(role == Qt::DisplayRole || role == Qt::EditRole){
         switch(index.column()){
         case 0:
             return task->summary();
@@ -124,6 +127,17 @@ QVariant TreeCalendarModel::data(const QModelIndex &index, int role) const{
     }
     return QVariant();
 }
+bool TreeCalendarModel::setData(const QModelIndex &index, const QVariant &value, int role){
+    if(!index.isValid())
+        return false;
+    if(role == Qt::EditRole){
+        CalendarTask* task = taskForIndex(index);
+        task->setSummary(value.toString());
+        return true;
+    }
+    return false;
+}
+
 QVariant TreeCalendarModel::headerData(int section, Qt::Orientation orientation, int role) const{
     if(orientation == Qt::Horizontal && role == Qt::DisplayRole){
         switch (section) {

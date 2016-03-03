@@ -19,6 +19,7 @@ public:
     CalendarTask* parent() const;
     QList<CalendarTask*> subtasks() const;
     QString summary() const;
+    void setSummary(const QString& summary);
 
     /**
      * Time spans will be sorted by their start date

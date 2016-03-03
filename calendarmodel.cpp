@@ -372,3 +372,7 @@ void CalendarModel::informTimesChanged(CalendarTask* task){
     requestSave();
     emit timesChanged(task);
 }
+void CalendarModel::informTaskChanged(CalendarTask *task){
+    requestSave();
+    emit taskChanged(task);
+}
