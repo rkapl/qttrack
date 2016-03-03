@@ -355,7 +355,19 @@ void CalendarModel::removeTask(CalendarTask *task){
     emit taskRemoved(task->parent(), task, index);
     requestSave();
 }
-
+void CalendarModel::moveTask(CalendarTask *task, CalendarTask *newParent){
+    if(task->parent() == newParent)
+        return;
+    CalendarTask* oldParent = task->parent();
+    QList<CalendarTask*>& oldTaskList = (task->parent() == NULL) ? mRootTasks : task->parent()->mSubtasks;
+    QList<CalendarTask*>& newTaskList = (newParent == NULL) ? mRootTasks : newParent->mSubtasks;
+    int oldIndex = oldTaskList.indexOf(task);
+    emit taskAboutToBeMoved(task, oldParent, newParent, oldIndex, newTaskList.length());
+    task->mParent = newParent;
+    oldTaskList.removeOne(task);
+    newTaskList.append(task);
+    emit taskMoved(task, oldParent, newParent, oldIndex, newTaskList.length() - 1);
+}
 void CalendarModel::informTimesChanged(CalendarTask* task){
     requestSave();
     emit timesChanged(task);

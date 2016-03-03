@@ -32,6 +32,11 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     connect(ui->actionRemoveTask, &QAction::triggered, this, &TaskListWindow::removeSelectedTask);
     connect(&mActiveTaskTimeUpdater, &QTimer::timeout, this, &TaskListWindow::updateActiveTaskTicker);
 
+    ui->treeView->setDragEnabled(true);
+    ui->treeView->setAcceptDrops(true);;
+    ui->treeView->setDropIndicatorShown(true);
+    ui->treeView->setDragDropMode(QAbstractItemView::InternalMove);
+
     QWidgetAction* fixMenuAction = new QWidgetAction(this);
     fixMenuAction->setDefaultWidget(&mFixTimeMenuWidget);
     mFixTimeMenu.addAction(fixMenuAction);
@@ -207,6 +212,10 @@ void TaskListWindow::openFile(const QString& fileName){
         ui->treeView->setModel(mTreeModel);
         taskSelectionChanged(QItemSelection(), QItemSelection());
         connect(ui->treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TaskListWindow::taskSelectionChanged);
+        connect(mTreeModel, &TreeCalendarModel::itemDropped, [this](const QModelIndex& idx){
+            ui->treeView->expand(idx.parent());
+            ui->treeView->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect);
+        });
 
         ui->treeView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
         ui->treeView->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);

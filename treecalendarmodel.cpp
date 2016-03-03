@@ -1,3 +1,5 @@
+#include <QMimeData>
+#include <QDataStream>
 #include "treecalendarmodel.h"
 #include "calendarmodel.h"
 #include "calendartask.h"
@@ -13,6 +15,16 @@ TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
     connect(model, &CalendarModel::taskAdded, this, &TreeCalendarModel::taskAdded);
     connect(model, &CalendarModel::taskMoved, this, &TreeCalendarModel::taskMoved);
     connect(model, &CalendarModel::taskRemoved, this, &TreeCalendarModel::taskRemoved);
+}
+Qt::ItemFlags TreeCalendarModel::flags(const QModelIndex &index) const{
+    Qt::ItemFlags def = QAbstractItemModel::flags(index);
+    if(index.isValid())
+        return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | def;
+    else
+        return Qt::ItemIsDropEnabled | def;
+}
+Qt::DropActions TreeCalendarModel::supportedDropActions() const{
+    return Qt::MoveAction;
 }
 void TreeCalendarModel::taskAboutToBeAdded(CalendarTask*parent, CalendarTask* task, int position){
     Q_UNUSED(task);
@@ -125,3 +137,45 @@ QVariant TreeCalendarModel::headerData(int section, Qt::Orientation orientation,
     }
     return QVariant();
 }
+
+class ItemMimeData: public QMimeData{
+    Q_OBJECT
+public:
+    QList<CalendarTask*> tasks;
+};
+#include "treecalendarmodel.moc"
+
+QStringList TreeCalendarModel::mimeTypes() const{
+    return QStringList{MIMETYPE_ITEM};
+}
+QMimeData* TreeCalendarModel::mimeData(const QModelIndexList &indexes) const{
+    QScopedPointer<ItemMimeData> data(new ItemMimeData());
+    QByteArray contents;
+    QDataStream stream(contents);
+    for(const auto& index : indexes){
+        data->tasks.append(taskForIndex(index));
+    }
+    data->setData(MIMETYPE_ITEM, contents);
+    return data.take();
+}
+bool TreeCalendarModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
+                                     int row, int column, const QModelIndex &parent){
+    Q_UNUSED(row); Q_UNUSED(column);
+    if(action == Qt::IgnoreAction)
+        return true;
+    if(!data->hasFormat(MIMETYPE_ITEM))
+        return false;
+    const ItemMimeData* itemData = dynamic_cast<const ItemMimeData*>(data);
+    if(itemData == NULL)
+        return false;
+    for(CalendarTask* t: itemData->tasks){
+        mModel->moveTask(t, taskForIndex(parent));
+        emit itemDropped(indexForTask(t));
+    }
+    return true;
+}
+
+
+
+
+
