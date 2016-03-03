@@ -9,6 +9,7 @@ TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
     mModel(model)
 {
     connect(model, &CalendarModel::timesChanged, this, &TreeCalendarModel::taskTimeChanged);
+    connect(model, &CalendarModel::taskChanged, this, &TreeCalendarModel::taskChanged);
     connect(model, &CalendarModel::taskAboutToBeAdded, this, &TreeCalendarModel::taskAboutToBeAdded);
     connect(model, &CalendarModel::taskAboutToBeMoved, this, &TreeCalendarModel::taskAboutToBeMoved);
     connect(model, &CalendarModel::taskAboutToBeRemoved, this, &TreeCalendarModel::taskAboutToBeRemoved);
@@ -60,10 +61,14 @@ void TreeCalendarModel::taskRemoved(CalendarTask *parent, CalendarTask *task, in
 void TreeCalendarModel::taskTimeChanged(CalendarTask *task){
     QModelIndex index = indexForTask(task,1);
     while(index.isValid()){
-        emit dataChanged(index, sibling(index.row(), 2, index));
+        emit dataChanged(index, index.sibling(index.row(), 2));
         index = parent(index);
     }
 }
+void TreeCalendarModel::taskChanged(CalendarTask *task){
+    emit dataChanged(indexForTask(task,0), indexForTask(task,0));
+}
+
 CalendarTask* TreeCalendarModel::taskForIndex(const QModelIndex& idx) const{
     return static_cast<CalendarTask*>(idx.internalPointer());
 }

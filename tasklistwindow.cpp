@@ -53,7 +53,11 @@ void TaskListWindow::showError(const QString &from, const QString &text){
     QMessageBox::critical(this, from, text);
 }
 void TaskListWindow::addNewTask(){
-    mModel->addTask(NULL, "New Task");
+    if(mTreeModel != NULL){
+        CalendarTask* task = mModel->addTask(NULL, "New Task");
+        ui->treeView->selectionModel()->select(mTreeModel->indexForTask(task), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        ui->treeView->edit(mTreeModel->indexForTask(task));
+    }
 }
 void TaskListWindow::removeSelectedTask(){
     if(selectedTask() != NULL){
@@ -201,7 +205,7 @@ void TaskListWindow::openFile(const QString& fileName){
         clearModel();
         mModel = new CalendarModel(this);
         connect(mModel, &CalendarModel::error, this, &TaskListWindow::showError);
-        connect(&mPeriodicSave, &QTimer::timeout, mModel, &CalendarModel::requestSave);
+        connect(&mPeriodicSave, &QTimer::timeout, mModel, &CalendarModel::save);
 
         if(!mModel->load(fileName)){
             return;
@@ -215,7 +219,7 @@ void TaskListWindow::openFile(const QString& fileName){
         connect(ui->treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TaskListWindow::taskSelectionChanged);
         connect(mTreeModel, &TreeCalendarModel::itemDropped, [this](const QModelIndex& idx){
             ui->treeView->expand(idx.parent());
-            ui->treeView->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect);
+            ui->treeView->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         });
 
         ui->treeView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -226,12 +230,12 @@ void TaskListWindow::openFile(const QString& fileName){
 }
 TaskListWindow::~TaskListWindow()
 {
-    if(mActiveTask){
+    if(mActiveTask != NULL){
         mActiveTask->stopLogging(QDateTime::currentDateTime());
         mActiveTask = NULL;
     }
-    if(mModel){
-        mModel->doSave(QDateTime::currentDateTimeUtc());
+    if(mModel != NULL){
+        mModel->save();
     }
 
     delete ui;

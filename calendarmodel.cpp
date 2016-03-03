@@ -23,9 +23,20 @@ static icalproperty* icalcomponent_get_first_x_property(icalcomponent* c, const 
     return NULL;
 }
 
+CalendarModel::WillSave::WillSave(CalendarModel *model):
+    mModel(model){
+    mModel->mModificationRecursion++;
+}
+CalendarModel::WillSave::~WillSave(){
+    mModel->mModificationRecursion--;
+    if(mModel->mModificationRecursion == 0)
+        mModel->save();
+}
+
 CalendarModel::CalendarModel(QObject *parent):
     QObject(parent),
-    mIcal(NULL)
+    mIcal(NULL),
+    mModificationRecursion(0)
 {
 }
 QList<CalendarTask*> CalendarModel::rootTasks() const{
@@ -257,10 +268,8 @@ void CalendarModel::handleTodo(icalcomponent *c, TaskMap& tasks){
     mAllTasks.append(task.take());
 
 }
-void CalendarModel::requestSave(){
-    doSave(QDateTime::currentDateTimeUtc());
-}
-void CalendarModel::doSave(const QDateTime& now){
+void CalendarModel::save(){
+     QDateTime now = QDateTime::currentDateTimeUtc();
     LibIcalFlusher flusher;
     CalendarModel::updateProperty(mIcal, ICAL_PRODID_PROPERTY,
                                   icalproperty_new_prodid(ICAL_PRODID_QTTRACK));
@@ -328,6 +337,7 @@ void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
 
 }
 CalendarTask* CalendarModel::addTask(CalendarTask *parent, const QString &name){
+    WillSave save(this);
     QScopedPointer<CalendarTask> task(new CalendarTask());
     task->prepareNew();
     task->mSummary = name;
@@ -340,39 +350,49 @@ CalendarTask* CalendarModel::addTask(CalendarTask *parent, const QString &name){
     CalendarTask* taskRaw = task.take();
     mAllTasks.append(taskRaw);
     emit taskAdded(parent, taskRaw, taskList.length() - 1);
-    requestSave();
     return taskRaw;
 }
 void CalendarModel::removeTask(CalendarTask *task){
-    QList<CalendarTask*>& taskList = (task->parent() == NULL) ? mRootTasks : task->parent()->mSubtasks;
+    WillSave save(this);
+    CalendarTask* parent = task->parent();
+    QList<CalendarTask*>& taskList = (parent == NULL) ? mRootTasks : parent->mSubtasks;
     int index = taskList.indexOf(task);
 
-    emit taskAboutToBeRemoved(task->parent(), task, index);
+    emit taskAboutToBeRemoved(parent, task, index);
     QScopedPointer<CalendarTask> taskDeleter(task);
     mAllTasks.removeOne(task);
     taskList.removeOne(task);
     task->deleteBackings();
-    emit taskRemoved(task->parent(), task, index);
-    requestSave();
+    emit taskRemoved(parent, task, index);
+    if(parent != NULL)
+        parent->invalidateTimes();
 }
 void CalendarModel::moveTask(CalendarTask *task, CalendarTask *newParent){
     if(task->parent() == newParent)
         return;
+
+    WillSave save(this);
     CalendarTask* oldParent = task->parent();
     QList<CalendarTask*>& oldTaskList = (task->parent() == NULL) ? mRootTasks : task->parent()->mSubtasks;
     QList<CalendarTask*>& newTaskList = (newParent == NULL) ? mRootTasks : newParent->mSubtasks;
     int oldIndex = oldTaskList.indexOf(task);
+
     emit taskAboutToBeMoved(task, oldParent, newParent, oldIndex, newTaskList.length());
     task->mParent = newParent;
     oldTaskList.removeOne(task);
     newTaskList.append(task);
     emit taskMoved(task, oldParent, newParent, oldIndex, newTaskList.length() - 1);
+
+    if(oldParent != NULL)
+        oldParent->invalidateTimes();
+    if(newParent != NULL)
+        newParent->invalidateTimes();
 }
 void CalendarModel::informTimesChanged(CalendarTask* task){
-    requestSave();
+    WillSave save(this);
     emit timesChanged(task);
 }
 void CalendarModel::informTaskChanged(CalendarTask *task){
-    requestSave();
+    WillSave save(this);
     emit taskChanged(task);
 }

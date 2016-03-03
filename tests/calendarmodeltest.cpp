@@ -14,7 +14,7 @@ void CalendarModelTest::formatCycle(){
     CalendarModel m;
     bool loadOk = m.load("example.ics.test");
     QVERIFY(loadOk);
-    m.doSave(QDateTime::currentDateTimeUtc());
+    m.save();
 
     QStringList fileAfter = fetchLines("example.ics.test");
     QVERIFY(fileAfter.length() == fileBefore.length());

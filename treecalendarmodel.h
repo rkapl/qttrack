@@ -33,6 +33,7 @@ signals:
     void itemDropped(const QModelIndex& item);
 private slots:
     void taskTimeChanged(CalendarTask* task);
+    void taskChanged(CalendarTask* task);
     void taskAboutToBeAdded(CalendarTask *parent, CalendarTask* task, int position);
     void taskAdded(CalendarTask *parent, CalendarTask* task, int position);
     void taskAboutToBeRemoved(CalendarTask *parent, CalendarTask* task, int position);

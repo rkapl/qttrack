@@ -46,10 +46,6 @@ public:
      */
     bool load(const QString& path);
     QList<CalendarTask*> rootTasks() const;
-    /**
-     * @param now Explicit time for testing determinism.
-     */
-    void doSave(const QDateTime& now);
     CalendarTask* addTask(CalendarTask* parent, const QString& name);
     void moveTask(CalendarTask* task, CalendarTask* newParent);
     void removeTask(CalendarTask* task);
@@ -65,14 +61,20 @@ public:
     static icaltimetype qtToIcal(const QDateTime& );
     static QDateTime icalToQt(const icaltimetype &timw);
 
+    /**
+     * @brief Use this RAII guard to save your model when it is destroyed (unless your parent will save the model for you).
+     */
+    class WillSave{
+    public:
+        WillSave(CalendarModel* model);
+        ~WillSave();
+    private:
+        CalendarModel* mModel;
+    };
+
     ~CalendarModel();
 public slots:
-    /**
-     * @brief Request save may delay and coalesce save.
-     * Currently it does not do it and just calls doSave. Also it supplies the current
-     * system date as current date.
-     */
-    void requestSave();
+    void save();
 signals:
     void error(const QString& source, const QString& description);
     void readingThirdPartyFormat();
@@ -107,6 +109,12 @@ private:
      */
     bool mUnassignedAdded;
     CalendarTask* mUnassigned;
+    /**
+     * @brief Number of nested methods that want to save this model after running. Prevents redundant saves.
+     *
+     * Use in conjunction with WillSave RAII class;
+     */
+    int mModificationRecursion;
 
     void emitError(const QString& problem);
 
