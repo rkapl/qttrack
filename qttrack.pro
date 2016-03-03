@@ -43,5 +43,6 @@ RESOURCES += \
 include(tests/tests.pri)
 
 DISTFILES += \
-    ACKNOWLEDGEMENTS.TXT
+    COPYING \
+    TODO
 
