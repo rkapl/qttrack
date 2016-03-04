@@ -4,7 +4,8 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets
+# TODO: Use shared tango icons on linux, drop svg?
+QT       += core gui widgets svg
 
 TARGET = qttrack
 TEMPLATE = app
