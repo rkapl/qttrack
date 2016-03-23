@@ -10,7 +10,8 @@ TARGET = qttrack
 TEMPLATE = app
 CONFIG += link_pkgconfig c++11
 PKGCONFIG += libical
-
+target.path=/usr/bin/
+INSTALLS += target
 
 SOURCES += main.cpp\
     calendartask.cpp \
@@ -44,5 +45,6 @@ include(tests/tests.pri)
 
 DISTFILES += \
     COPYING \
-    TODO
+    TODO \
+    README.md
 
