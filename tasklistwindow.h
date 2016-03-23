@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QMenu>
 #include <QWidgetAction>
+#include <QSettings>
 #include "fixtimewidget.h"
 
 namespace Ui {
@@ -26,12 +27,15 @@ public:
     ~TaskListWindow();
 public slots:
     void openFileWithDialog();
-    void openFile(const QString& fileName);
+    void openFile(const QString& fileName, bool showInCaption = false);
+    void createFile(const QString& fileName, bool showInCaption = false);
     void toggleTask();
     void clearModel();
     void showError(const QString& from, const QString& text);
     void addNewTask();
     void removeSelectedTask();
+    void openDefault();
+    void checkForImport();
 private slots:
     void taskSelectionChanged(const QItemSelection&, const QItemSelection& );
     void timeDetailsForCurrentSelection();
@@ -48,6 +52,10 @@ private:
      */
     void updateActiveTaskUi();
     void updateActiveTaskTicker();
+    void updateCaption(const QString& fileName, bool showInCaption);
+    void clearCaption();
+    void doImport();
+    void connectNewModel();
     CalendarTask* selectedTask() const;
 
     Ui::TimeTableWindow *ui;
@@ -67,6 +75,9 @@ private:
     QTimer mPeriodicSave;
     QIcon mPlay;
     QIcon mStop;
+    QSettings mSettings;
+
+    QString mCaptionBase;
 };
 
 #endif // TIMETABLEWINDOW_H

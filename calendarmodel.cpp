@@ -10,6 +10,9 @@
 #include <QHash>
 #include <QtAlgorithms>
 #include <QSaveFile>
+#include <QStandardPaths>
+#include <QDir>
+#include <QDebug>
 
 typedef void (*icalparser_deleter)(icalparser*);
 typedef void (*icalcomponent_deleter)(icalcomponent*);
@@ -44,10 +47,22 @@ QList<CalendarTask*> CalendarModel::rootTasks() const{
 }
 CalendarModel::~CalendarModel(){
     qDeleteAll(mAllTasks);
+    mRootTasks.clear();
+    mAllTasks.clear();
     qDebug() << "Deallocating model";
     icalcomponent_free(mIcal);
 }
+QString CalendarModel::pathDefaultCalendar(){
+    return QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+            + "/qttrack.ics");
+}
+QString CalendarModel::pathKTimeTracker(){
+    return QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+            + "/.kde4/share/apps/ktimetracker/ktimetracker.ics");
+}
 bool CalendarModel::load(const QString &path){
+    assert(mIcal == NULL);
+
     mFileName = path;
     QFile f(path);
     if(!f.open(QFile::ReadOnly)){
@@ -268,26 +283,34 @@ void CalendarModel::handleTodo(icalcomponent *c, TaskMap& tasks){
     mAllTasks.append(task.take());
 
 }
-void CalendarModel::save(){
-     QDateTime now = QDateTime::currentDateTimeUtc();
-    LibIcalFlusher flusher;
-    CalendarModel::updateProperty(mIcal, ICAL_PRODID_PROPERTY,
-                                  icalproperty_new_prodid(ICAL_PRODID_QTTRACK));
-    // save only the reachable tasks
+bool CalendarModel::create(const QString &path){
+    assert(mIcal == NULL);
+    mFileName = path;
+    mIcal = icalcomponent_new(ICAL_VCALENDAR_COMPONENT);
+    return save();
+}
+bool CalendarModel::save(){
+    QDateTime now = QDateTime::currentDateTimeUtc();
+    // propagate the tasks into the iCal structures
     for(auto t: mRootTasks){
         t->save(now, mIcal);
     }
+    LibIcalFlusher flusher;
+    CalendarModel::updateProperty(mIcal, ICAL_PRODID_PROPERTY,
+                                  icalproperty_new_prodid(ICAL_PRODID_QTTRACK));
 
     QSaveFile file(mFileName);
     if(!file.open(QSaveFile::WriteOnly)){
         emitError(file.errorString());
-        return;
+        return false;
     }
     const char* data = icalcomponent_as_ical_string_r(mIcal);
     file.write(data);
     if(!file.commit()){
         emitError(file.errorString());
+        return false;
     }
+    return true;
 }
 void CalendarModel::handleEvent(icalcomponent *c, const TaskMap& tasks){
     QScopedPointer<CalendarTimeSpan> span(new CalendarTimeSpan());
@@ -395,4 +418,12 @@ void CalendarModel::informTimesChanged(CalendarTask* task){
 void CalendarModel::informTaskChanged(CalendarTask *task){
     WillSave save(this);
     emit taskChanged(task);
+}
+void CalendarModel::createExampleTask(){
+    auto root = addTask(NULL, "Set-up Q Time Tracker");
+    auto install = addTask(root, "Install Q Time Tracker");
+    bool ok;
+    install->addFix(QDateTime::currentDateTimeUtc(), TimeSpan::parse("+10m", &ok));
+    Q_ASSERT(ok);
+    addTask(root, "Set-up my tasks");
 }

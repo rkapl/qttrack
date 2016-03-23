@@ -6,6 +6,7 @@
 #include <QBoxLayout>
 #include <QLineEdit>
 #include <QTextStream>
+#include <QFile>
 
 #include "calendarmodel.h"
 #include "treecalendarmodel.h"
@@ -18,7 +19,8 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     ui(new Ui::TimeTableWindow),
     mModel(NULL),
     mTreeModel(NULL),
-    mActiveTask(NULL)
+    mActiveTask(NULL),
+    mSettings()
 {
     ui->setupUi(this);
 
@@ -38,6 +40,8 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     ui->treeView->setDragDropMode(QAbstractItemView::InternalMove);
     ui->treeView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
 
+    mCaptionBase = windowTitle();
+
     QWidgetAction* fixMenuAction = new QWidgetAction(this);
     fixMenuAction->setDefaultWidget(&mFixTimeMenuWidget);
     mFixTimeMenu.addAction(fixMenuAction);
@@ -48,6 +52,58 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
 
     modelExistenceChanged();
     updateActiveTaskUi();
+    taskSelectionChanged(QItemSelection(), QItemSelection());
+}
+void TaskListWindow::checkForImport(){
+    QString defaultPath = CalendarModel::pathDefaultCalendar();
+    bool defaultExists = QFile(defaultPath).exists();
+    if(!defaultExists){
+        QString oldPath = CalendarModel::pathKTimeTracker();
+        bool oldExists = QFile(oldPath).exists();
+        if(oldExists){
+            if(!mSettings.contains("importDismissed") || !mSettings.value("importDismissed").toBool()){
+                doImport();
+            }
+        }
+    }
+}
+void TaskListWindow::openDefault(){
+    checkForImport();
+    QString path = CalendarModel::pathDefaultCalendar();
+    if(QFile::exists(path)){
+        openFile(path);
+    }else{
+        createFile(path);
+        if(mModel)
+            mModel->createExampleTask();
+    }
+}
+void TaskListWindow::doImport(){
+    QMessageBox askImport(this);
+    askImport.setWindowTitle("Import KTimeTracker data?");
+    askImport.setText(QString(
+        "<p>A saved file from KTimeTracker was found on this computer (in <i>%1</i>). "
+        "Do You want to import the tracking information into Q Time Tracker?</p>"
+        "<p><b>Note:</b> The tracking information will be stored in <i>%2</i>. The file"
+        "format will still be compatible with KTimeTracker.</p>")
+                      .arg(CalendarModel::pathKTimeTracker())
+                      .arg(CalendarModel::pathDefaultCalendar()));
+    askImport.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    if(askImport.exec() == QMessageBox::Yes){
+        QFileInfo file(CalendarModel::pathDefaultCalendar());
+        if(!file.dir().mkpath(file.path())){
+            QMessageBox::critical(this, "Error", "Can not create directory " + file.path());
+            return;
+        }
+        if(!QFile::copy(CalendarModel::pathKTimeTracker(), CalendarModel::pathDefaultCalendar())){
+            QMessageBox::critical(this, "Error", QString("Can not copy KTimTracker information from %1 to %2")
+                                  .arg(CalendarModel::pathKTimeTracker())
+                                  .arg(CalendarModel::pathDefaultCalendar()));
+            return;
+        }
+    }else{
+        mSettings.setValue("importDismissed", QVariant(true));
+    }
 }
 void TaskListWindow::showError(const QString &from, const QString &text){
     QMessageBox::critical(this, from, text);
@@ -60,9 +116,10 @@ void TaskListWindow::addNewTask(){
     }
 }
 void TaskListWindow::removeSelectedTask(){
-    if(selectedTask() != NULL){
-        bool warnTooMuchTime = selectedTask()->duration(false).msec > DELETE_WARNING_TRESHOLD_MSEC;
-        bool warnSubtasks = selectedTask()->subtasks().length() > 0;
+    auto selectedTask = this->selectedTask();
+    if(selectedTask != NULL){
+        bool warnTooMuchTime = selectedTask->duration(false).msec > DELETE_WARNING_TRESHOLD_MSEC;
+        bool warnSubtasks = selectedTask->subtasks().length() > 0;
         if(warnTooMuchTime || warnSubtasks){
             QMessageBox box(this);
             box.setTextFormat(Qt::RichText);
@@ -72,7 +129,7 @@ void TaskListWindow::removeSelectedTask(){
             box.setDefaultButton(QMessageBox::No);
             QString message;
             QTextStream stream(&message);
-            stream << "Are You sure You want to delete the task named <b>" << selectedTask()->summary() << "</b>?";
+            stream << "Are You sure You want to delete the task named <b>" << selectedTask->summary() << "</b>?";
             stream <<" It can not be undone, so be aware that: <ul>";
             if(warnSubtasks)
                 stream << "<li>You will delete the task including all its subtasks</li>";
@@ -83,7 +140,19 @@ void TaskListWindow::removeSelectedTask(){
             if(box.exec() !=  QMessageBox::Yes)
                 return;
         }
-        mModel->removeTask(selectedTask());
+
+        // check if the task has an active subtask and stop it if necessary
+        auto task = mActiveTask;
+        while(task != NULL){
+            if(task == selectedTask){
+                mActiveTask->stopLogging(QDateTime::currentDateTime());
+                mActiveTask = NULL;
+                updateActiveTaskUi();
+            }
+            task = task->parent();
+        }
+
+        mModel->removeTask(selectedTask);
     }
 }
 void TaskListWindow::fixTimeFor(CalendarTask *task){
@@ -117,6 +186,7 @@ void TaskListWindow::toggleTask(){
     }
 
     updateActiveTaskUi();
+    // the selection does not matter, the method fetches the selection from the model
     taskSelectionChanged(QItemSelection(), QItemSelection());
 }
 void TaskListWindow::updateActiveTaskUi(){
@@ -161,13 +231,13 @@ void TaskListWindow::timeDetailsFor(CalendarTask* task){
 }
 void TaskListWindow::modelExistenceChanged(){
     ui->actionAddTask->setEnabled(mModel != NULL);
-    ui->actionRemoveTask->setEnabled(mModel != NULL);
 }
 void TaskListWindow::taskSelectionChanged(const QItemSelection &, const QItemSelection&){
     CalendarTask* selected = selectedTask();
     bool enabled = selected != NULL;
     ui->actionTaskListing->setEnabled(enabled);
     ui->actionToggleTask->setEnabled(enabled);
+    ui->actionRemoveTask->setEnabled(enabled);
 
     if(selected != NULL && selected != mActiveTask){
         ui->actionToggleTask->setIcon(mPlay);
@@ -186,7 +256,9 @@ void TaskListWindow::taskSelectionChanged(const QItemSelection &, const QItemSel
     ui->actionFixTaskTime->setEnabled(selected != NULL && mActiveTask != selected);
 }
 void TaskListWindow::openFileWithDialog(){
-    openFile(QFileDialog::getOpenFileName(this, "Open time track", "", "KTimeTracker (*.ics)"));
+    QString file = QFileDialog::getOpenFileName(this, "Open time track", "", "KTimeTracker (*.ics)");
+    if(!file.isEmpty())
+        openFile(file, true);
 
 }
 void TaskListWindow::clearModel(){
@@ -199,35 +271,65 @@ void TaskListWindow::clearModel(){
     mModel = NULL;
     mTreeModel = NULL;
 }
+void TaskListWindow::createFile(const QString &fileName, bool showInCaption){
+    clearModel();
+    mModel = new CalendarModel(this);
+    connect(mModel, &CalendarModel::error, this, &TaskListWindow::showError);
 
-void TaskListWindow::openFile(const QString& fileName){
-    if(!fileName.isEmpty()){
-        clearModel();
-        mModel = new CalendarModel(this);
-        connect(mModel, &CalendarModel::error, this, &TaskListWindow::showError);
-        connect(&mPeriodicSave, &QTimer::timeout, mModel, &CalendarModel::save);
+    if(!mModel->create(fileName)){
+        delete mModel;
+        mModel = NULL;
+        clearCaption();
+        return;
+    }
+    connectNewModel();
+    updateCaption(fileName, showInCaption);
+}
+void TaskListWindow::openFile(const QString& fileName, bool showInCaption){
+    clearModel();
+    mModel = new CalendarModel(this);
+    connect(mModel, &CalendarModel::error, this, &TaskListWindow::showError);
 
-        if(!mModel->load(fileName)){
-            return;
-        }
-
-        mTreeModel = new TreeCalendarModel(mModel, this);
-
-        // set-up UI (model-dependent)
-        ui->treeView->setModel(mTreeModel);
-        taskSelectionChanged(QItemSelection(), QItemSelection());
-        connect(ui->treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TaskListWindow::taskSelectionChanged);
-        connect(mTreeModel, &TreeCalendarModel::itemDropped, [this](const QModelIndex& idx){
-            ui->treeView->expand(idx.parent());
-            ui->treeView->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-        });
-
-        ui->treeView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-        ui->treeView->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-        ui->treeView->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-        modelExistenceChanged();
+    if(!mModel->load(fileName)){
+        delete mModel;
+        mModel = NULL;
+        clearCaption();
+        return;
+    }
+    connectNewModel();
+    updateCaption(fileName, showInCaption);
+}
+void TaskListWindow::clearCaption(){
+    setWindowTitle(mCaptionBase);
+}
+void TaskListWindow::updateCaption(const QString &fileName, bool showInCaption){
+    if(showInCaption){
+        setWindowTitle(QString("%1 [%2]").arg(mCaptionBase, fileName));
+    }else{
+        setWindowTitle(mCaptionBase);
     }
 }
+
+void TaskListWindow::connectNewModel(){
+    connect(&mPeriodicSave, &QTimer::timeout, mModel, &CalendarModel::save);
+
+    mTreeModel = new TreeCalendarModel(mModel, this);
+
+    // set-up UI (model-dependent)
+    ui->treeView->setModel(mTreeModel);
+    taskSelectionChanged(QItemSelection(), QItemSelection());
+    connect(ui->treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TaskListWindow::taskSelectionChanged);
+    connect(mTreeModel, &TreeCalendarModel::itemDropped, [this](const QModelIndex& idx){
+        ui->treeView->expand(idx.parent());
+        ui->treeView->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    });
+
+    ui->treeView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->treeView->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    ui->treeView->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    modelExistenceChanged();
+}
+
 TaskListWindow::~TaskListWindow()
 {
     if(mActiveTask != NULL){

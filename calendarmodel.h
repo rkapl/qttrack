@@ -45,6 +45,7 @@ public:
      * @brief May not be called multiple times.
      */
     bool load(const QString& path);
+    bool create(const QString& path);
     QList<CalendarTask*> rootTasks() const;
     CalendarTask* addTask(CalendarTask* parent, const QString& name);
     void moveTask(CalendarTask* task, CalendarTask* newParent);
@@ -61,6 +62,9 @@ public:
     static icaltimetype qtToIcal(const QDateTime& );
     static QDateTime icalToQt(const icaltimetype &timw);
 
+    static QString pathDefaultCalendar();
+    static QString pathKTimeTracker();
+
     /**
      * @brief Use this RAII guard to save your model when it is destroyed (unless your parent will save the model for you).
      */
@@ -74,7 +78,8 @@ public:
 
     ~CalendarModel();
 public slots:
-    void save();
+    bool save();
+    void createExampleTask();
 signals:
     void error(const QString& source, const QString& description);
     void readingThirdPartyFormat();

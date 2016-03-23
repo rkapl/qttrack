@@ -8,7 +8,9 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    QApplication::setApplicationName("q-time-tracker");
+    QApplication::setOrganizationName("rkapl");
+    QApplication::setApplicationName("qtimetracker");
+    QApplication::setOrganizationDomain("rkapl.cz");
     QApplication::setApplicationVersion("1.0");
 
     QCommandLineParser cmdline;
@@ -37,6 +39,8 @@ int main(int argc, char *argv[])
     }else if(cmdline.positionalArguments().length() > 1){
         fprintf(stderr, "Error: More than two arguments given.");
         cmdline.showHelp(1);
+    }else{
+        w.openDefault();
     }
 
     return a.exec();
