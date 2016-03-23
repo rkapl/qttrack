@@ -12,7 +12,7 @@ would be activity detection, idle detection and running in the system tray.
 Installing
 ==========
 
-Debian:
+Debian/Ubuntu:
 
     dpkg-buildpackage
     sudo dpkg -i ../qttrack*.deb
