@@ -73,10 +73,20 @@ void TaskListWindow::openDefault(){
     if(QFile::exists(path)){
         openFile(path);
     }else{
+        if(!createDataDir())
+            return;
         createFile(path);
         if(mModel)
             mModel->createExampleTask();
     }
+}
+bool TaskListWindow::createDataDir(){
+    QFileInfo file(CalendarModel::pathDefaultCalendar());
+    if(!file.dir().mkpath(file.path())){
+        QMessageBox::critical(this, "Error", "Can not create directory " + file.path());
+        return false;
+    }
+    return true;
 }
 void TaskListWindow::doImport(){
     QMessageBox askImport(this);
@@ -90,11 +100,8 @@ void TaskListWindow::doImport(){
                       .arg(CalendarModel::pathDefaultCalendar()));
     askImport.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     if(askImport.exec() == QMessageBox::Yes){
-        QFileInfo file(CalendarModel::pathDefaultCalendar());
-        if(!file.dir().mkpath(file.path())){
-            QMessageBox::critical(this, "Error", "Can not create directory " + file.path());
+        if(!createDataDir())
             return;
-        }
         if(!QFile::copy(CalendarModel::pathKTimeTracker(), CalendarModel::pathDefaultCalendar())){
             QMessageBox::critical(this, "Error", QString("Can not copy KTimTracker information from %1 to %2")
                                   .arg(CalendarModel::pathKTimeTracker())

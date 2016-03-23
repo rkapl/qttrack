@@ -6,7 +6,7 @@ the same file format so that You can view the old data. Plus it does
 not depend on the whole KDE Frameworks thing, so that could be a plus for
 somebody.
 
-So far, lot of feature from KTimeTracker are missing, the most important
+So far, lot of features from KTimeTracker are missing, the most important
 would be activity detection, idle detection and running in the system tray.
 
 Installing

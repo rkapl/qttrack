@@ -56,6 +56,7 @@ private:
     void clearCaption();
     void doImport();
     void connectNewModel();
+    bool createDataDir();
     CalendarTask* selectedTask() const;
 
     Ui::TimeTableWindow *ui;
