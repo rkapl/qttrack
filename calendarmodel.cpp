@@ -192,7 +192,6 @@ icaltimetype CalendarModel::qtToIcal(const QDateTime & timeAny){
     QDateTime time = timeAny.toUTC();
     icaltimetype utc;
     memset(&utc, 0, sizeof(utc));
-    utc.is_utc = 1;
     utc.zone = icaltimezone_get_utc_timezone();
     utc.day = time.date().day();
     utc.month = time.date().month();
