@@ -13,6 +13,7 @@ private:
 private slots:
     void formatCycle();
     void parseTimeSpan();
+    void error(const QString& source, const QString& icalError);
 };
 
 #endif // CALENDARMODELTEST_H

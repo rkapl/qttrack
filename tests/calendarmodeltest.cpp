@@ -1,6 +1,7 @@
 #include "calendarmodeltest.h"
 #include "calendarmodel.h"
 #include <QTest>
+#include <QDebug>
 #include "../timespan.h"
 
 void CalendarModelTest::formatCycle(){
@@ -12,6 +13,7 @@ void CalendarModelTest::formatCycle(){
     QVERIFY(copyOk);
 
     CalendarModel m;
+    connect(&m, &CalendarModel::error, this, &CalendarModelTest::error);
     bool loadOk = m.load("example.ics.test");
     QVERIFY(loadOk);
     m.save();
@@ -26,6 +28,13 @@ void CalendarModelTest::formatCycle(){
         }
     }
 }
+
+void CalendarModelTest::error(const QString& source, const QString& problem)
+{
+	qCritical() << "Ical problem: " << problem;
+	abort();
+}
+
 qint64 CalendarModelTest::parseOrDie(const QString &data){
     bool ok;
     TimeSpan span(TimeSpan::parse(data, &ok));

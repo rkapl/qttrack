@@ -102,7 +102,7 @@ bool CalendarModel::reportIcalError(icalcomponent *c){
 
     for(icalcomponent* cc = icalcomponent_get_first_component(c, ICAL_ANY_COMPONENT);
         cc != NULL;
-        cc = icalcomponent_get_next_component(cc, ICAL_ANY_COMPONENT)){
+        cc = icalcomponent_get_next_component(c, ICAL_ANY_COMPONENT)){
         if(reportIcalError(cc))
             return true;
     }
