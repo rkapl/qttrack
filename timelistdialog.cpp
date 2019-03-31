@@ -2,6 +2,7 @@
 #include "ui_timelistdialog.h"
 #include "calendartask.h"
 #include "calendartimespan.h"
+#include "exporttextdialog.h"
 #include <QStringList>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -29,15 +30,23 @@ TimeListDialog::TimeListDialog(QWidget *parent) :
     ui->setupUi(this);
     connect(ui->expandDates, &QPushButton::clicked, ui->treeWidget, &QTreeWidget::expandAll);
     connect(ui->recursive, &QCheckBox::toggled, this, &TimeListDialog::updateTree);
-
+    connect(ui->exportAsText, &QPushButton::clicked, this, &TimeListDialog::exportAsText);
 
     ui->treeWidget->setAlternatingRowColors(true);
 
 }
+
+void TimeListDialog::exportAsText() {
+    auto dlg = new ExportTextDialog();
+    dlg->setContent(mCurrentTask);
+    dlg->exec();
+}
+
 void TimeListDialog::setContent(CalendarTask *task){
     mCurrentTask = task;
     updateTree();
 }
+
 void TimeListDialog::updateTree(){
     if(mCurrentTask == NULL) return;
     bool recursive =  ui->recursive->isChecked();

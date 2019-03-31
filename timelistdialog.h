@@ -23,6 +23,7 @@ public:
     ~TimeListDialog();
 private slots:
     void updateTree();
+    void exportAsText();
 private:
     CalendarTask* mCurrentTask;
     /**

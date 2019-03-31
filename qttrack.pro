@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     timelistdialog.cpp \
     tasklistwindow.cpp \
     libicalflusher.cpp \
-    fixtimewidget.cpp
+    fixtimewidget.cpp \
+    exporttextdialog.cpp
 
 HEADERS  += \
     calendartask.h \
@@ -34,10 +35,12 @@ HEADERS  += \
     timelistdialog.h \
     tasklistwindow.h \
     libicalflusher.h \
-    fixtimewidget.h
+    fixtimewidget.h \
+    exporttextdialog.h
 
 FORMS    += timetablewindow.ui \
-    timelistdialog.ui
+    timelistdialog.ui \
+    exporttextdialog.ui
 
 RESOURCES += \
     resources.qrc

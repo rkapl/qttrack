@@ -1,2 +1,5 @@
 *.user
 example.ics.test
+pkg/
+*.o
+src/build
