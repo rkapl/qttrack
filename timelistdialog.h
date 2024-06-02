@@ -1,6 +1,7 @@
 #ifndef TIMELISTDIALOG_H
 #define TIMELISTDIALOG_H
 
+#include "timeformat.h"
 #include <QDialog>
 #include <QTreeWidgetItem>
 
@@ -19,6 +20,7 @@ class TimeListDialog : public QDialog
 
 public:
     explicit TimeListDialog(QWidget *parent = 0);
+    void setTimeFormat(const TimeFormat *timeFormat);
     void setContent(CalendarTask* task);
     ~TimeListDialog();
 private slots:
@@ -32,6 +34,8 @@ private:
      */
     void updateWalker(TimeListTimeWalker& walker, CalendarTimeSpan* span);
     void updateItemWithDuration(QTreeWidgetItem* item, const TimeSpan& duration);
+
+    const TimeFormat *mTimeFormat;
     Ui::TimeListDialog *ui;
 };
 

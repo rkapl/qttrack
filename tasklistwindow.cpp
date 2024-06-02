@@ -19,8 +19,10 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     ui(new Ui::TimeTableWindow),
     mModel(NULL),
     mTreeModel(NULL),
+    mSelectedTimeFormat(NULL),
     mActiveTask(NULL),
     mSettings()
+
 {
     ui->setupUi(this);
 
@@ -50,6 +52,8 @@ TaskListWindow::TaskListWindow(QWidget *parent) :
     mPlay = QIcon(":/icons/start.svg");
     mStop = QIcon(":/icons/stop.svg");
 
+    setupTimeFormats();
+
     modelExistenceChanged();
     updateActiveTaskUi();
     taskSelectionChanged(QItemSelection(), QItemSelection());
@@ -67,6 +71,28 @@ void TaskListWindow::checkForImport(){
         }
     }
 }
+
+void TaskListWindow::setupTimeFormats() {
+    /* Widgets cannot be added to toolbars in designer, add here */
+    mTimeFormatSelector = new QComboBox(this);
+    using P = TimeFormat::Part;
+    mAvailableTimeFormats.push_back(TimeFormat("Days Hours Minutes", P::DAY, P::MINUTE, 0));
+    mAvailableTimeFormats.push_back(TimeFormat("Hours Minutes", P::HOUR, P::MINUTE, 0));
+    mAvailableTimeFormats.push_back(TimeFormat("Decimal Hours", P::HOUR, P::HOUR, 2));
+    for (auto& f: mAvailableTimeFormats) {
+        mTimeFormatSelector->addItem(f.name(), QVariant());
+    }
+    ui->mainToolBar->addWidget(mTimeFormatSelector);
+    connect(mTimeFormatSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TaskListWindow::timeFormatSelected);
+    if (mSettings.contains("timeFormat")) {
+        QString savedFormat = mSettings.value("timeFormat").toString();
+        mTimeFormatSelector->setCurrentText(savedFormat);
+    }
+    if (!mSelectedTimeFormat) {
+        mSelectedTimeFormat = &mAvailableTimeFormats[0];
+    }
+}
+
 void TaskListWindow::openDefault(){
     checkForImport();
     QString path = CalendarModel::pathDefaultCalendar();
@@ -196,6 +222,13 @@ void TaskListWindow::toggleTask(){
     // the selection does not matter, the method fetches the selection from the model
     taskSelectionChanged(QItemSelection(), QItemSelection());
 }
+
+void TaskListWindow::timeFormatSelected(int index) {
+    mSelectedTimeFormat = &mAvailableTimeFormats[index];
+    mSettings.setValue("timeFormat", mSelectedTimeFormat->name());
+    if (mTreeModel)
+        mTreeModel->setTimeFormat(mSelectedTimeFormat);
+}
 void TaskListWindow::updateActiveTaskUi(){
     bool previousVisibility = ui->activeTaskInfoPane->isVisible();
     if(mActiveTask != NULL){
@@ -217,7 +250,7 @@ void TaskListWindow::updateActiveTaskUi(){
     }
 }
 void TaskListWindow::updateActiveTaskTicker(){
-    ui->activeTaskTime->setText((QDateTime::currentDateTime() - mActiveTimeSpan->start()).description());
+    ui->activeTaskTime->setText(mSelectedTimeFormat->format(QDateTime::currentDateTime() - mActiveTimeSpan->start()));
     if(QDate::currentDate() == mActiveTimeSpan->start().date())
         ui->activeTaskStart->setText(mActiveTimeSpan->start().time().toString());
     else
@@ -232,6 +265,7 @@ void TaskListWindow::timeDetailsForCurrentSelection(){
 void TaskListWindow::timeDetailsFor(CalendarTask* task){
     if(task != NULL){
         TimeListDialog timeList(this);
+        timeList.setTimeFormat(mSelectedTimeFormat);
         timeList.setContent(task);
         timeList.exec();
     }
@@ -321,6 +355,7 @@ void TaskListWindow::connectNewModel(){
     connect(&mPeriodicSave, &QTimer::timeout, mModel, &CalendarModel::save);
 
     mTreeModel = new TreeCalendarModel(mModel, this);
+    mTreeModel->setTimeFormat(mSelectedTimeFormat);
 
     // set-up UI (model-dependent)
     ui->treeView->setModel(mTreeModel);

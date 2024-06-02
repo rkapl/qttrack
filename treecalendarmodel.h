@@ -5,12 +5,14 @@
 
 class CalendarModel;
 class CalendarTask;
+class TimeFormat;
 
 class TreeCalendarModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
     explicit TreeCalendarModel(CalendarModel* mModel, QObject *parent = 0);
+
     QModelIndex index(int row, int column, const QModelIndex &parent) const;
     QModelIndex parent(const QModelIndex &child) const;
     int rowCount(const QModelIndex &parent) const;
@@ -29,6 +31,8 @@ public:
     CalendarTask *taskForIndex(const QModelIndex& idx) const;
     QModelIndex indexForTask(CalendarTask* task, int column = 0) const;
     static constexpr const char* MIMETYPE_ITEM = "application/vnd.qttrack.todo";
+public slots:
+    void setTimeFormat(const TimeFormat* format);
 signals:
     void itemDropped(const QModelIndex& item);
 private slots:
@@ -43,6 +47,7 @@ private slots:
     void taskMoved(CalendarTask* task, CalendarTask* oldParent, CalendarTask* newParent,
                    int oldPosition, int newPosition);
 private:
+    const TimeFormat *mTimeFormat;
     CalendarModel* mModel;
 };
 

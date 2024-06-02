@@ -7,7 +7,9 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QSettings>
+#include <QComboBox>
 #include "fixtimewidget.h"
+#include "timeformat.h"
 
 namespace Ui {
 class TimeTableWindow;
@@ -43,6 +45,7 @@ private slots:
     void timeDetailsFor(CalendarTask* task);
     void fixTimeFor(CalendarTask* task);
     void modelExistenceChanged();
+    void timeFormatSelected(int index);
 private:
     static constexpr int LOGGING_SAVE_FREQUENCY = 60*1000;
     static constexpr qint64 DELETE_WARNING_TRESHOLD_MSEC = 5 * 60 * 1000;
@@ -54,6 +57,7 @@ private:
     void updateActiveTaskTicker();
     void updateCaption(const QString& fileName, bool showInCaption);
     void clearCaption();
+    void setupTimeFormats();
     void doImport();
     void connectNewModel();
     bool createDataDir();
@@ -65,7 +69,9 @@ private:
 
     QMenu mFixTimeMenu;
     FixTimeWidget mFixTimeMenuWidget;
-
+    QComboBox* mTimeFormatSelector;
+    std::vector<TimeFormat> mAvailableTimeFormats;
+    TimeFormat* mSelectedTimeFormat;
 
     CalendarTask* mActiveTask;
     CalendarTimeSpan* mActiveTimeSpan;

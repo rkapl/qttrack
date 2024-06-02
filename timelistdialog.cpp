@@ -33,11 +33,15 @@ TimeListDialog::TimeListDialog(QWidget *parent) :
     connect(ui->exportAsText, &QPushButton::clicked, this, &TimeListDialog::exportAsText);
 
     ui->treeWidget->setAlternatingRowColors(true);
+}
 
+void TimeListDialog::setTimeFormat(const TimeFormat *timeFormat) {
+    mTimeFormat = timeFormat;
 }
 
 void TimeListDialog::exportAsText() {
     auto dlg = new ExportTextDialog();
+    dlg->setTimeFormat(mTimeFormat);
     dlg->setContent(mCurrentTask);
     dlg->exec();
 }
@@ -52,7 +56,7 @@ void TimeListDialog::updateTree(){
     bool recursive =  ui->recursive->isChecked();
     ui->treeWidget->clear();
     ui->summary->setText(mCurrentTask->summary());
-    ui->timeSpent->setText(mCurrentTask->duration(recursive).description(TimeSpan::MAX_DETAIL));
+    ui->timeSpent->setText(mTimeFormat->format(mCurrentTask->duration(recursive)));
 
     ui->treeWidget->setColumnCount(recursive ? 4 : 3);
     QStringList headerLabels{tr("Start"), tr("Duration"), tr("End")};
@@ -80,7 +84,7 @@ void TimeListDialog::updateTree(){
         updateWalker(walker, span);
         QTreeWidgetItem* item = new QTreeWidgetItem(walker.dayItem);
         item->setData(0, Qt::DisplayRole, span->start().time());
-        item->setData(1, Qt::DisplayRole, span->duration().description());
+        item->setData(1, Qt::DisplayRole, mTimeFormat->format(span->duration()));
         if(span->isFix()){
             item->setData(2, Qt::DisplayRole, tr("Time Fix"));
             item->setData(2, Qt::FontRole, italic);
@@ -103,7 +107,7 @@ void TimeListDialog::updateTree(){
 }
 void TimeListDialog::updateItemWithDuration(QTreeWidgetItem* item, const TimeSpan &duration){
     if(item != NULL)
-        item->setData(1, Qt::DisplayRole, duration.description(TimeSpan::MAX_DETAIL));
+        item->setData(1, Qt::DisplayRole, mTimeFormat->format(duration));
 }
 void TimeListDialog::updateWalker(TimeListTimeWalker &walker, CalendarTimeSpan *span){
     // TODO: maybe also track of the tasks done in the given year/month/day and display them as list?

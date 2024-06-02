@@ -18,6 +18,7 @@ SOURCES += main.cpp\
     calendartask.cpp \
     calendarmodel.cpp \
     calendartimespan.cpp \
+    timeformat.cpp \
     treecalendarmodel.cpp \
     timespan.cpp \
     timelistdialog.cpp \
@@ -30,6 +31,7 @@ HEADERS  += \
     calendartask.h \
     calendarmodel.h \
     calendartimespan.h \
+    timeformat.h \
     treecalendarmodel.h \
     timespan.h \
     timelistdialog.h \

@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QRegularExpression>
 #include <QMap>
+#include <QString>
 #include <QStringRef>
 
 
@@ -23,7 +24,7 @@ const QRegularExpression TimeSpan::mRegExp = []{
         "h","hour","hours",
         "d","day","days"
     };
-    QString part(QString("((\\d+)\\s*(%1))").arg(validNames.join("|")));
+    QString part(QString("((\\d+(\\.\\d+)?)\\s*(%1))").arg(validNames.join("|")));
     return QRegularExpression(QString("^\\s*[+-]?\\s*%1(\\s+%1)*\\s*$").arg(part),QRegularExpression::CaseInsensitiveOption);
 }();
 
@@ -60,10 +61,25 @@ TimeSpan TimeSpan::parse(const QString &str, bool *ok){
 
     while(current() != '$'){
         // lex the time
-        quint64 amount = 0;
-        while(current() >= '0' && current() <= '9'){
-            amount = amount*10 + current() - '0';
+        QString amount_str;
+        while(current() >= '0' && current() <= '9') {
+            amount_str.push_back(current());
             pos++;
+        }
+
+        //decimal part
+        if (current() == '.') {
+            amount_str.push_back('.');
+            pos++;
+            while(current() >= '0' && current() <= '9') {
+                amount_str.push_back(current());
+                pos++;
+            }
+        }
+        bool ok;
+        double amount = amount_str.toDouble(&ok);
+        if (!ok) {
+            throw std::logic_error("Amount error");
         }
         skip_ws();
         // multiply by the unit
@@ -71,12 +87,15 @@ TimeSpan TimeSpan::parse(const QString &str, bool *ok){
         case 'D':
         case 'd':
             amount*=24;
+            [[fallthrough]];
         case 'h':
         case 'H':
             amount*=60;
+            [[fallthrough]];
         case 'm':
         case 'M':
             amount*=60;
+            [[fallthrough]];
         case 's':
         case 'S':
             amount*=1000;
@@ -100,44 +119,6 @@ const QRegularExpression& TimeSpan::timeSpanRegex(){
     return mRegExp;
 }
 
-/**
- * Writes a part of TimeSpan description (such as minutes, hours ...)
- * into a string if it is appropriate: leading zero parts and parts
- * exceeding the wanted detail are emitted.
- */
-#define wpart(name, var) \
-    if( (var != 0 || noskip) && detail < maxdetail){ \
-        noskip = true; \
-        detail++; \
-        text.append(QString("%1 " name).arg(var)); \
-    }
-QString TimeSpan::description(int maxdetail) const{
-    QStringList text;
-    qint64 msec = TimeSpan::msec;
-    if(msec < 0){
-        msec = -msec;
-        text.append("-");
-    }
-
-    qint64 seconds = msec / 1000;
-    qint64 minutes = seconds / 60;
-    seconds -= minutes * 60;
-    qint64 hours = minutes / 60;
-    minutes -= hours * 60;
-    qint64 days = hours / 24;
-    hours -= days * 24;
-
-
-
-    bool noskip = false;
-    int detail = 0;
-    wpart("d", days);
-    wpart("h", hours);
-    wpart("m", minutes);
-    noskip = true;
-    wpart("s", seconds);
-    return text.join(" ");
-}
 TimeSpan operator-(const QDateTime& a, const QDateTime& b){
     return TimeSpan(b.msecsTo(a));
 }

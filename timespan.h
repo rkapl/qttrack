@@ -14,7 +14,6 @@ public:
     TimeSpan& operator+=(const TimeSpan& add);
     TimeSpan operator+(const TimeSpan& b) const;
 
-    QString description(int maxdetail = 2) const;
     static TimeSpan parse(const QString& str, bool* ok);
     static const QRegularExpression &timeSpanRegex();
     static constexpr int MAX_DETAIL = 4;

@@ -10,9 +10,14 @@ static void indent(QString& out, int level) {
 
 ExportTextDialog::ExportTextDialog(QWidget *parent) :
     QDialog(parent),
+    mTimeFormat(&TimeFormat::defaultFormat),
     ui(new Ui::ExportTextDialog)
 {
     ui->setupUi(this);
+}
+
+void ExportTextDialog::setTimeFormat(const TimeFormat* timeFormat) {
+    mTimeFormat = timeFormat;
 }
 
 void ExportTextDialog::setContent(CalendarTask* task) {
@@ -24,12 +29,13 @@ void ExportTextDialog::setContent(CalendarTask* task) {
 void ExportTextDialog::exportTo(CalendarTask* task, QString &out, int level) {
     indent(out, level);
     out.append(QString("#%1, duration: %2, with subtasks: %3\n").arg(task->summary(),
-       task->duration(false).description(2),
-       task->duration(true).description(2)));
+       mTimeFormat->format(task->duration(false)),
+       mTimeFormat->format(task->duration(true))
+    ));
 
     for (CalendarTimeSpan *span: task->timeSpans(false)) {
         indent(out, level + 1);
-        auto duration = span->duration().description(2);
+        auto duration = mTimeFormat->format(span->duration());
         auto start = span->start().toString();
         if (span->isFix()) {
             out.append(QString("FIX at %1: %2").arg(start, duration));

@@ -3,6 +3,7 @@
 #include "treecalendarmodel.h"
 #include "calendarmodel.h"
 #include "calendartask.h"
+#include "timeformat.h"
 
 TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
     QAbstractItemModel(parent),
@@ -16,7 +17,15 @@ TreeCalendarModel::TreeCalendarModel(CalendarModel *model, QObject *parent) :
     connect(model, &CalendarModel::taskAdded, this, &TreeCalendarModel::taskAdded);
     connect(model, &CalendarModel::taskMoved, this, &TreeCalendarModel::taskMoved);
     connect(model, &CalendarModel::taskRemoved, this, &TreeCalendarModel::taskRemoved);
+    mTimeFormat = &TimeFormat::defaultFormat;
 }
+
+void TreeCalendarModel::setTimeFormat(const TimeFormat* format) {
+    mTimeFormat = format;
+    auto roots = mModel->rootTasks();
+    dataChanged(createIndex(0, 1, roots.first()), createIndex(roots.count() - 1, 2, roots.last()));
+}
+
 Qt::ItemFlags TreeCalendarModel::flags(const QModelIndex &index) const{
     Qt::ItemFlags def = QAbstractItemModel::flags(index);
     if(index.isValid())
@@ -125,9 +134,9 @@ QVariant TreeCalendarModel::data(const QModelIndex &index, int role) const{
         case 0:
             return task->summary();
         case 1:
-            return task->duration(false).description();
+            return mTimeFormat->format(task->duration(false));
         case 2:
-            return task->duration(true).description();
+            return mTimeFormat->format(task->duration(true));
         }
     }
     return QVariant();
