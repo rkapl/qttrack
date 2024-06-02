@@ -112,6 +112,7 @@ void TimeListDialog::updateItemWithDuration(QTreeWidgetItem* item, const TimeSpa
 void TimeListDialog::updateWalker(TimeListTimeWalker &walker, CalendarTimeSpan *span){
     // TODO: maybe also track of the tasks done in the given year/month/day and display them as list?
     QDate start = span->start().date();
+    QLocale locale;
 
     if(start.year() != walker.year){
         updateItemWithDuration(walker.yearItem, walker.yearDuration);
@@ -126,7 +127,7 @@ void TimeListDialog::updateWalker(TimeListTimeWalker &walker, CalendarTimeSpan *
         updateItemWithDuration(walker.monthItem, walker.monthDuration);
         walker.monthDuration = TimeSpan();
 
-        QString name = QDate::longMonthName(start.month(), QDate::StandaloneFormat);
+        QString name = locale.standaloneMonthName(start.month());
         walker.monthItem = new QTreeWidgetItem(walker.yearItem, QStringList{name});
         walker.month = start.month();
         walker.day = -1;

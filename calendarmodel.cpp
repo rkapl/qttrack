@@ -248,7 +248,7 @@ icalproperty* CalendarModel::updateXProperty(icalcomponent *c, const QString &na
     return p;
 }
 void CalendarModel::sortSpans(QList<CalendarTimeSpan*>& spans){
-    qSort(spans.begin(), spans.end(), [](CalendarTimeSpan* a, CalendarTimeSpan* b){
+    std::sort(spans.begin(), spans.end(), [](CalendarTimeSpan* a, CalendarTimeSpan* b){
        return a->start() < b->start();
     });
 }
