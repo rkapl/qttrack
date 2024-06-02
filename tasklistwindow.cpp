@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QTextStream>
 #include <QFile>
+#include <QFlags>
 
 #include "calendarmodel.h"
 #include "treecalendarmodel.h"
@@ -250,7 +251,8 @@ void TaskListWindow::updateActiveTaskUi(){
     }
 }
 void TaskListWindow::updateActiveTaskTicker(){
-    ui->activeTaskTime->setText(mSelectedTimeFormat->format(QDateTime::currentDateTime() - mActiveTimeSpan->start()));
+    auto span = TimeSpan::fromDiff(mActiveTimeSpan->start(), QDateTime::currentDateTime());
+    ui->activeTaskTime->setText(mSelectedTimeFormat->format(span));
     if(QDate::currentDate() == mActiveTimeSpan->start().date())
         ui->activeTaskStart->setText(mActiveTimeSpan->start().time().toString());
     else

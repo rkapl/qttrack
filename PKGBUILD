@@ -5,8 +5,8 @@ pkgdesc=""
 arch=(any)
 url="http://github.com/rkapl/qttrack"
 license=('GPL')
-depends=(qt5-base libical)
-makedepends=(qt5-base libical)
+depends=(qt6-base libical)
+makedepends=(qt6-base libical)
 source=()
 md5sums=()
 
@@ -17,7 +17,7 @@ prepare() {
 build() {
    mkdir -p build
    cd build
-   qmake-qt5 ../.. DEFINES+=TESTS
+   qmake6 ../.. DEFINES+=TESTS
 	make
 }
 

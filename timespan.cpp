@@ -5,8 +5,6 @@
 #include <QRegularExpression>
 #include <QMap>
 #include <QString>
-#include <QStringRef>
-
 
 TimeSpan::TimeSpan():
     msec(0)
@@ -42,7 +40,7 @@ TimeSpan TimeSpan::parse(const QString &str, bool *ok){
 
     // lex the string
     int pos = 0;
-    auto current = [&]{return pos < str.length() ? str.at(pos).unicode() : '$';};
+    auto current = [&]{return pos < str.length() ? str.at(pos) : '$';};
     auto skip_ws = [&]{
       while(pos < str.length() && str.at(pos).isSpace())
           pos++;
@@ -83,7 +81,7 @@ TimeSpan TimeSpan::parse(const QString &str, bool *ok){
         }
         skip_ws();
         // multiply by the unit
-        switch (current()) {
+        switch (current().unicode()) {
         case 'D':
         case 'd':
             amount*=24;
@@ -119,8 +117,8 @@ const QRegularExpression& TimeSpan::timeSpanRegex(){
     return mRegExp;
 }
 
-TimeSpan operator-(const QDateTime& a, const QDateTime& b){
-    return TimeSpan(b.msecsTo(a));
+TimeSpan TimeSpan::fromDiff(const QDateTime& a, const QDateTime& b) {
+    return TimeSpan(a.msecsTo(b));
 }
 TimeSpan& TimeSpan::operator+=(const TimeSpan& add){
     msec += add.msec;

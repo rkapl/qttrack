@@ -14,6 +14,8 @@ public:
     TimeSpan& operator+=(const TimeSpan& add);
     TimeSpan operator+(const TimeSpan& b) const;
 
+    static TimeSpan fromDiff(const QDateTime& a, const QDateTime& b);
+
     static TimeSpan parse(const QString& str, bool* ok);
     static const QRegularExpression &timeSpanRegex();
     static constexpr int MAX_DETAIL = 4;
@@ -23,8 +25,5 @@ public:
 private:
     static const QRegularExpression mRegExp;
 };
-
-TimeSpan operator-(const QDateTime& a, const QDateTime& b);
-
 
 #endif // TIMESPAN_H

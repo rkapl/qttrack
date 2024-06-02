@@ -1,9 +1,7 @@
-contains(DEFINES, TESTS){
-    QT += testlib
+QT += testlib
 
-    HEADERS += \
-        tests/calendarmodeltest.h
+HEADERS += \
+    tests/calendarmodeltest.h
 
-    SOURCES += \
-        tests/calendarmodeltest.cpp
-}
+SOURCES += \
+    tests/calendarmodeltest.cpp

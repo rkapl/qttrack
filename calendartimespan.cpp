@@ -63,6 +63,6 @@ TimeSpan CalendarTimeSpan::duration() const{
     if(mIsFix){
         return mFixDuration;
     }else{
-        return end()-start();
+        return TimeSpan::fromDiff(start(), end());
     }
 }
